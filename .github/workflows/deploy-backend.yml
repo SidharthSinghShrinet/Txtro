@@ -1,0 +1,43 @@
+name: Deploy Backend to Oracle Cloud
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'server/**'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions UI
+
+jobs:
+  deploy:
+    name: Deploy to Oracle VPS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Execute Remote SSH Commands
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.OCI_HOST }}
+          username: ${{ secrets.OCI_USERNAME }}
+          key: ${{ secrets.OCI_SSH_KEY }}
+          port: 22
+          script_stop: true
+          script: |
+            set -e
+            echo "🚀 Fetching latest changes from GitHub..."
+            cd ~/Txtro
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "📦 Installing backend production dependencies..."
+            cd server
+            npm install --omit=dev
+
+            echo "🔄 Gracefully reloading PM2 process..."
+            pm2 reload txtro-backend || pm2 restart txtro-backend
+
+            echo "✅ Deployment completed successfully!"

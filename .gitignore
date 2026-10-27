@@ -32,3 +32,6 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# Private Infrastructure Documentation
+ORACLE_CLOUD_MIGRATION_GUIDE.md
