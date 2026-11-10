@@ -178,4 +178,77 @@ const getMessage = expressAsyncHandler(async (req, res, next) => {
     new ApiResponse(200, true, "Message fetched successfully", messages).send(res)
 })
 
-export { sendMessage, getMessage, getUploadUrl, abortUpload };
+/*
+& This controller will handle three scenarios:-
+^ Scenario 1: Adding a Brand New Reaction on any message 
+^ Scenario 2: Removing / Undoing a Reaction (Toggle Off)
+^ Scenario 3: Changing Reactions (e.g. 👍 to 😂)
+*/
+const toggleReaction = expressAsyncHandler(async (req, res) => {
+    const { messageId } = req.params;
+    const { emoji } = req.body;
+    const userId = req.user._id;
+    if (!emoji || typeof emoji !== "string") {
+        throw new ErrorHandler(400, "Valid Emoji String is required");
+    }
+    // 1. Check if message exists and find if THIS user already reacted
+    const message = await messageModel.findById(messageId).select("senderId receiverId reactions conversationId");
+    if (!message) {
+        throw new ErrorHandler(404, "Message not found");
+    }
+    const existingReaction = message.reactions.find((r) => r.userId.toString() === userId.toString());
+    let updatedMessage;
+    if (existingReaction) {
+        if (existingReaction.emoji === emoji) {
+            // SCENARIO 2: Clicked same emoji -> ATOMIC REMOVE ($pull)
+            updatedMessage = await messageModel.findByIdAndUpdate(messageId,
+                { $pull: { reactions: { userId: userId } } },
+                { new: true }
+            )
+        } else {
+            // SCENARIO 3: Clicked different emoji -> ATOMIC UPDATE ($set)
+            updatedMessage = await messageModel.findOneAndUpdate(
+                { _id: messageId, "reactions.userId": userId },
+                {
+                    $set: { "reactions.$.emoji": emoji }
+                },
+                {
+                    new: true
+                }
+            )
+        }
+    } else {
+        // SCENARIO 1: First time reacting -> ATOMIC ADD ($push)
+        updatedMessage = await messageModel.findByIdAndUpdate(
+            messageId,
+            { $push: { reactions: { userId: userId, emoji: emoji } } },
+            { new: true }
+        )
+    }
+
+    // 2. Identify the other participant
+    const otherUserId = updatedMessage.senderId.toString() === userId.toString()
+        ? updatedMessage.receiverId
+        : updatedMessage.senderId;
+
+
+    // 3. Broadcast real-time reaction update to both users (and all their open devices/tabs)
+    const allRecipientSockets = [
+        ...getReceiverSocketIds(otherUserId),
+        ...getReceiverSocketIds(userId)
+    ];
+
+    allRecipientSockets.forEach((sId) => {
+        io.to(sId).emit("messageReactionUpdated", {
+            messageId: updatedMessage._id,
+            conversationId: updatedMessage.conversationId,
+            reactions: updatedMessage.reactions
+        })
+    });
+    new ApiResponse(200, true, "Reaction Updated Successfully", {
+        messageId: updatedMessage._id,
+        reactions: updatedMessage.reactions
+    }).send(res);
+});
+
+export { sendMessage, getMessage, getUploadUrl, abortUpload, toggleReaction };

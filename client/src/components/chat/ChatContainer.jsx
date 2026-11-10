@@ -24,6 +24,7 @@ const ChatContainer = ({
   onMessageChange = () => { },
   onSendMessage = () => { },
   onSendAudio = () => { },
+  onToggleReaction = () => { },
   onBack = () => { },
   isSending = false,
   selectedFiles = [],
@@ -224,12 +225,16 @@ const ChatContainer = ({
                 <React.Fragment key={msg._id || index}>
                   {showDateSeparator && <DateSeparator date={msg.createdAt} />}
                   <MessageBubble
+                    messageId={msg._id}
                     message={msg.message}
                     createdAt={msg.createdAt}
                     isOutgoing={isOutgoing}
                     status={msg.status || 'sent'}
                     messageType={msg.messageType || 'text'}
                     attachments={msg.attachments || []}
+                    reactions={msg.reactions || []}
+                    currentUserId={currentUser?._id}
+                    onToggleReaction={onToggleReaction}
                     uploadProgress={uploadProgress}
                     onCancelUpload={onCancelUpload}
                     onImageClick={handleOpenLightbox}

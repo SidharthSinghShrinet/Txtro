@@ -1,6 +1,13 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, lazy, Suspense } from 'react';
 import { Send, Paperclip, Smile, X, FileText, Loader2, Mic, Trash2, Pause, Play } from 'lucide-react';
 import { useAudioRecorder, formatAudioDuration } from '../../hooks/useAudioRecorder';
+
+// Lazy-loaded Emoji Picker (0 KB initial bundle footprint + hover prefetch)
+const EmojiPicker = lazy(() => import('emoji-picker-react'));
+
+const prefetchEmojiPicker = () => {
+  import('emoji-picker-react');
+};
 
 const MessageInput = ({
   value = '',
@@ -48,6 +55,50 @@ const MessageInput = ({
     const newTime = ratio * duration;
     previewAudioRef.current.currentTime = newTime;
     setPreviewTime(newTime);
+  };
+
+  // Full Emoji Picker Popover State (Phase 10)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const emojiPickerRef = useRef(null);
+  const emojiButtonRef = useRef(null);
+  const textInputRef = useRef(null);
+
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    if (!showEmojiPicker) return;
+    const handleClickOutside = (e) => {
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(e.target) &&
+        !emojiButtonRef.current?.contains(e.target)
+      ) {
+        setShowEmojiPicker(false);
+      }
+    };
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => document.removeEventListener('pointerdown', handleClickOutside);
+  }, [showEmojiPicker]);
+
+  // Insert emoji at cursor position
+  const handleEmojiSelect = (emojiData) => {
+    const emoji = emojiData.emoji;
+    if (!emoji) return;
+
+    if (textInputRef.current) {
+      const start = textInputRef.current.selectionStart ?? value.length;
+      const end = textInputRef.current.selectionEnd ?? value.length;
+      const updated = value.slice(0, start) + emoji + value.slice(end);
+      onChange({ target: { value: updated } });
+
+      setTimeout(() => {
+        if (textInputRef.current) {
+          textInputRef.current.focus();
+          textInputRef.current.setSelectionRange(start + emoji.length, start + emoji.length);
+        }
+      }, 0);
+    } else {
+      onChange({ target: { value: value + emoji } });
+    }
   };
 
   const handlePreviewPointerDown = (e) => {
@@ -139,6 +190,7 @@ const MessageInput = ({
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       if (!disabled && (value.trim() || selectedFiles.length > 0) && !isUploading) {
+        setShowEmojiPicker(false);
         onSubmit(e);
       }
     }
@@ -162,7 +214,38 @@ const MessageInput = ({
   };
 
   return (
-    <div className="border-t border-slate-200 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/60 backdrop-blur-md shrink-0 transition-colors duration-200">
+    <div className="relative border-t border-slate-200 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/60 backdrop-blur-md shrink-0 transition-colors duration-200">
+      {/* Full Emoji Picker Popover Modal (Phase 10) */}
+      {showEmojiPicker && (
+        <div
+          ref={emojiPickerRef}
+          className="absolute bottom-full left-3 sm:left-6 mb-2 z-50 shadow-2xl rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700/80 animate-in fade-in zoom-in-95 duration-150"
+        >
+          <Suspense
+            fallback={
+              <div className="w-[310px] sm:w-[330px] h-[380px] bg-white dark:bg-slate-900 flex flex-col items-center justify-center gap-2 text-slate-400">
+                <Loader2 size={24} className="animate-spin text-indigo-500" />
+                <span className="text-xs font-medium">Loading emojis...</span>
+              </div>
+            }
+          >
+            <EmojiPicker
+              onEmojiClick={handleEmojiSelect}
+              theme={
+                typeof document !== 'undefined' &&
+                document.documentElement.classList.contains('dark')
+                  ? 'dark'
+                  : 'light'
+              }
+              searchPlaceHolder="Search all 3,600+ emojis..."
+              width={320}
+              height={380}
+              lazyLoadEmojis={true}
+              previewConfig={{ showPreview: false }}
+            />
+          </Suspense>
+        </div>
+      )}
       {/* File Attachment Staging Preview Dock */}
       {selectedFiles.length > 0 && (
         <div className="px-4 pt-2.5 pb-2 border-b border-slate-100 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/40">
@@ -369,7 +452,7 @@ const MessageInput = ({
             </div>
           )
         ) : (
-          <form onSubmit={onSubmit} className="flex items-center gap-2">
+          <form onSubmit={(e) => { setShowEmojiPicker(false); onSubmit(e); }} className="flex items-center gap-2">
             {/* Hidden File Input with 'multiple' enabled */}
             <input
               type="file"
@@ -393,9 +476,16 @@ const MessageInput = ({
                 <Paperclip size={18} />
               </button>
               <button
+                ref={emojiButtonRef}
                 type="button"
+                onClick={() => setShowEmojiPicker((prev) => !prev)}
+                onMouseEnter={prefetchEmojiPicker}
                 disabled={disabled || isUploading}
-                className="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60 transition-colors cursor-pointer disabled:opacity-50"
+                className={`p-2 rounded-xl transition-all cursor-pointer disabled:opacity-50 ${
+                  showEmojiPicker
+                    ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60'
+                    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
+                }`}
                 title="Insert emoji"
                 tabIndex={-1}
               >
@@ -406,6 +496,7 @@ const MessageInput = ({
             {/* Text Input */}
             <div className="flex-1 relative">
               <input
+                ref={textInputRef}
                 type="text"
                 value={value}
                 onChange={onChange}

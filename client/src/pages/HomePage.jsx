@@ -5,7 +5,7 @@ import NoChatSelected from '../components/chat/NoChatSelected';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import toast from 'react-hot-toast';
-import { getAllUsersWithMetadataApi, getMessagesApi, sendMessageApi } from '../api/api';
+import { getAllUsersWithMetadataApi, getMessagesApi, sendMessageApi, toggleReactionApi } from '../api/api';
 import { useEffect } from 'react';
 import { uploadFilesDirectlyToCloud } from '../utils/fileUpload';
 import {
@@ -481,6 +481,66 @@ function HomePage() {
         }
     };
 
+    // Toggle Reaction on a Message with 0ms Optimistic UI
+    const handleToggleReaction = async (messageId, emoji) => {
+        if (!messageId || !emoji || !user?._id) return;
+
+        // 1. Optimistic UI update (0ms perceived latency)
+        let previousMessages;
+        setMessages((prevMessages) => {
+            previousMessages = prevMessages;
+            return prevMessages.map((msg) => {
+                if (msg._id !== messageId) return msg;
+
+                const currentReactions = Array.isArray(msg.reactions) ? [...msg.reactions] : [];
+                const existingIdx = currentReactions.findIndex(
+                    (r) => (r.userId?._id || r.userId)?.toString() === user._id.toString()
+                );
+
+                if (existingIdx > -1) {
+                    if (currentReactions[existingIdx].emoji === emoji) {
+                        // Clicked same emoji -> Toggle off (remove)
+                        currentReactions.splice(existingIdx, 1);
+                    } else {
+                        // Clicked different emoji -> Update to new emoji
+                        currentReactions[existingIdx] = {
+                            ...currentReactions[existingIdx],
+                            emoji,
+                        };
+                    }
+                } else {
+                    // New reaction from current user
+                    currentReactions.push({
+                        userId: user._id,
+                        emoji,
+                    });
+                }
+
+                return { ...msg, reactions: currentReactions };
+            });
+        });
+
+        // 2. Persist to backend
+        try {
+            const res = await toggleReactionApi(messageId, emoji);
+            if (res.data?.data?.reactions) {
+                // Synchronize with server confirmation
+                setMessages((prev) =>
+                    prev.map((m) =>
+                        m._id === messageId ? { ...m, reactions: res.data.data.reactions } : m
+                    )
+                );
+            }
+        } catch (err) {
+            console.error("Failed to toggle reaction:", err);
+            // Rollback optimistic update
+            if (previousMessages) {
+                setMessages(previousMessages);
+            }
+            toast.error(err?.response?.data?.message || "Could not update reaction");
+        }
+    };
+
     // Listen for Incoming Messages, Read Receipts & Live Typing in real-time
     useEffect(() => {
         if (!socket) return;
@@ -570,12 +630,22 @@ function HomePage() {
             );
         };
 
+        // Real-time reactions sync (Phase 10)
+        const handleMessageReactionUpdated = ({ messageId, reactions }) => {
+            setMessages((prevMessages) =>
+                prevMessages.map((msg) =>
+                    msg._id === messageId ? { ...msg, reactions } : msg
+                )
+            );
+        };
+
         socket.on("newMessage", handleNewMessage);
         socket.on("userTyping", handleUserTyping);
         socket.on("userStoppedTyping", handleUserStoppedTyping);
         socket.on("messageSeen", handleMessageSeen);
         socket.on("userStatusUpdate", handleUserStatusUpdate);
-        socket.on("messageDelivered", handleMessageDelievered)
+        socket.on("messageDelivered", handleMessageDelievered);
+        socket.on("messageReactionUpdated", handleMessageReactionUpdated);
 
         return () => {
             socket.off("newMessage", handleNewMessage);
@@ -583,7 +653,8 @@ function HomePage() {
             socket.off("userStoppedTyping", handleUserStoppedTyping);
             socket.off("messageSeen", handleMessageSeen);
             socket.off("userStatusUpdate", handleUserStatusUpdate);
-            socket.off("messageDelivered", handleMessageDelievered)
+            socket.off("messageDelivered", handleMessageDelievered);
+            socket.off("messageReactionUpdated", handleMessageReactionUpdated);
         };
     }, [socket, selectedUser, user?._id]);
 
@@ -628,6 +699,7 @@ function HomePage() {
                             onMessageChange={handleMessageInputChange}
                             onSendMessage={handleSendMessage}
                             onSendAudio={handleSendAudio}
+                            onToggleReaction={handleToggleReaction}
                             onBack={handleBackToSidebar}
                             selectedFiles={selectedFiles}
                             onFilesSelect={(newFiles) => {

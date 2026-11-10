@@ -34,3 +34,7 @@ export const sendMessageApi = (payload, userId) => {
     const body = typeof payload === "string" ? { message: payload } : payload;
     return apiInstance.post(`/messages/send/${userId}`, body);
 }
+
+export const toggleReactionApi = (messageId, emoji) => {
+    return apiInstance.post(`/messages/react/${messageId}`, { emoji });
+}

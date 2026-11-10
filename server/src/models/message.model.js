@@ -61,6 +61,20 @@ const messageSchema = new mongoose.Schema({
                 }
             ]
         }
+    ],
+    reactions: [
+        {
+            _id: false,  // 👈 Tells Mongoose NOT to generate an automatic _id for reactions
+            userId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User",
+                required: true
+            },
+            emoji: {
+                type: String,
+                required: true
+            }
+        }
     ]
 }, {
     timestamps: true

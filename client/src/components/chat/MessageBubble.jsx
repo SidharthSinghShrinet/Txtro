@@ -1,18 +1,99 @@
-import React from 'react';
-import { Check, CheckCheck, FileText, Download, Clock, AlertCircle, X } from 'lucide-react';
+import React, { useState, useRef, useEffect, useMemo, lazy, Suspense } from 'react';
+import { Check, CheckCheck, FileText, Download, Clock, AlertCircle, X, Smile, Plus, Loader2 } from 'lucide-react';
 import VoiceNotePlayer from './VoiceNotePlayer';
 
+// Lazy-loaded full emoji picker for custom reactions (WhatsApp-style '+' button)
+const EmojiPicker = lazy(() => import('emoji-picker-react'));
+
+const QUICK_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+
 const MessageBubble = ({
+  messageId = null,
   message = '',
   createdAt = new Date(),
   isOutgoing = false,
   status = 'sent',
   messageType = 'text',
   attachments = [],
+  reactions = [],
+  currentUserId = null,
+  onToggleReaction = () => { },
   uploadProgress = 0,
   onCancelUpload = () => { },
   onImageClick = () => { },
 }) => {
+  const [showReactionDock, setShowReactionDock] = useState(false);
+  const [showFullPicker, setShowFullPicker] = useState(false);
+  const dockRef = useRef(null);
+  const fullPickerRef = useRef(null);
+  const touchTimerRef = useRef(null);
+
+  // Group reactions by emoji (e.g. { "❤️": { count: 2, hasUserReacted: true } })
+  const reactionGroups = useMemo(() => {
+    if (!Array.isArray(reactions) || reactions.length === 0) return {};
+    return reactions.reduce((acc, curr) => {
+      const emoji = curr.emoji;
+      if (!emoji) return acc;
+      if (!acc[emoji]) {
+        acc[emoji] = {
+          count: 0,
+          hasUserReacted: false,
+        };
+      }
+      acc[emoji].count += 1;
+      const rUid = (curr.userId?._id || curr.userId)?.toString();
+      if (currentUserId && rUid === currentUserId.toString()) {
+        acc[emoji].hasUserReacted = true;
+      }
+      return acc;
+    }, {});
+  }, [reactions, currentUserId]);
+
+  const userReaction = useMemo(() => {
+    if (!Array.isArray(reactions) || !currentUserId) return null;
+    const found = reactions.find(
+      (r) => (r.userId?._id || r.userId)?.toString() === currentUserId.toString()
+    );
+    return found ? found.emoji : null;
+  }, [reactions, currentUserId]);
+
+  // Touch handlers for mobile long-press reaction dock (350ms hold)
+  const handleTouchStart = () => {
+    touchTimerRef.current = setTimeout(() => {
+      setShowReactionDock(true);
+    }, 350);
+  };
+
+  const handleTouchEnd = () => {
+    if (touchTimerRef.current) {
+      clearTimeout(touchTimerRef.current);
+      touchTimerRef.current = null;
+    }
+  };
+
+  // Close reaction dock & full picker when clicking/tapping outside
+  useEffect(() => {
+    if (!showReactionDock && !showFullPicker) return;
+    const handleClickOutside = (e) => {
+      const isInsideDock = dockRef.current && dockRef.current.contains(e.target);
+      const isInsideFullPicker = fullPickerRef.current && fullPickerRef.current.contains(e.target);
+      if (!isInsideDock && !isInsideFullPicker) {
+        setShowReactionDock(false);
+        setShowFullPicker(false);
+      }
+    };
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => document.removeEventListener('pointerdown', handleClickOutside);
+  }, [showReactionDock, showFullPicker]);
+
+  const handleCustomEmojiReact = (emojiData) => {
+    const em = emojiData.emoji;
+    if (!em) return;
+    onToggleReaction(messageId, em);
+    setShowFullPicker(false);
+    setShowReactionDock(false);
+  };
+
   const formatTime = (time) => {
     try {
       const date = new Date(time);
@@ -37,19 +118,126 @@ const MessageBubble = ({
     (att) => !att.mimeType?.startsWith('image/') && !att.mimeType?.startsWith('audio/')
   );
 
+  const hasReactions = Object.keys(reactionGroups).length > 0;
+
   return (
     <div
-      className={`flex w-full mb-3 ${
-        isOutgoing ? 'justify-end' : 'justify-start'
-      }`}
+      className={`relative group/msg flex w-full ${
+        hasReactions ? 'mb-4.5' : 'mb-2.5'
+      } ${isOutgoing ? 'justify-end' : 'justify-start'}`}
     >
       <div
-        className={`max-w-[88%] sm:max-w-[72%] rounded-2xl shadow-sm text-sm break-words relative transition-all overflow-hidden ${
-          isOutgoing
-            ? 'bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white rounded-br-xs shadow-indigo-950/20'
-            : 'bg-white dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 rounded-bl-xs border border-slate-200 dark:border-slate-700/50 shadow-xs dark:shadow-slate-950/40'
-        } ${imageAttachments.length > 0 ? 'p-1.5' : audioAttachments.length > 0 ? 'px-3 py-2' : 'px-4 py-2.5'}`}
+        className={`relative max-w-[88%] sm:max-w-[72%] flex items-center gap-1.5 ${
+          isOutgoing ? 'flex-row' : 'flex-row-reverse'
+        }`}
       >
+        {/* Desktop Quick Reaction Trigger Button (Hover) */}
+        {status !== 'sending' && (
+          <button
+            type="button"
+            onClick={() => setShowReactionDock((prev) => !prev)}
+            className="opacity-0 group-hover/msg:opacity-100 p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-all cursor-pointer shrink-0 shadow-xs active:scale-90"
+            title="React to message"
+          >
+            <Smile size={16} />
+          </button>
+        )}
+
+        {/* Floating Quick Reaction Dock */}
+        {showReactionDock && (
+          <div
+            ref={dockRef}
+            className={`absolute -top-10 ${
+              isOutgoing ? 'right-0' : 'left-0'
+            } z-30 flex items-center gap-1 px-2 py-1 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-full shadow-lg border border-slate-200/80 dark:border-slate-700/80 animate-in zoom-in-95 fade-in duration-150 select-none`}
+          >
+            {QUICK_REACTIONS.map((em) => {
+              const isSelected = userReaction === em;
+              return (
+                <button
+                  key={em}
+                  type="button"
+                  onClick={() => {
+                    onToggleReaction(messageId, em);
+                    setShowReactionDock(false);
+                    setShowFullPicker(false);
+                  }}
+                  className={`w-7 h-7 flex items-center justify-center text-lg hover:scale-130 active:scale-95 transition-transform cursor-pointer rounded-full ${
+                    isSelected
+                      ? 'bg-indigo-100 dark:bg-indigo-950/80 ring-1 ring-indigo-500'
+                      : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                  title={`React ${em}`}
+                >
+                  {em}
+                </button>
+              );
+            })}
+
+            {/* '+' Button to open full emoji reaction picker */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowFullPicker((prev) => !prev);
+              }}
+              className={`w-7 h-7 flex items-center justify-center rounded-full transition-all cursor-pointer ${
+                showFullPicker
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 hover:scale-115 active:scale-95'
+              }`}
+              title="More reactions"
+            >
+              <Plus size={16} />
+            </button>
+          </div>
+        )}
+
+        {/* Full Emoji Picker Popover for Reactions */}
+        {showFullPicker && (
+          <div
+            ref={fullPickerRef}
+            className={`absolute bottom-full mb-3 ${
+              isOutgoing ? 'right-0' : 'left-0'
+            } z-40 shadow-2xl rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700/80 animate-in fade-in zoom-in-95 duration-150`}
+          >
+            <Suspense
+              fallback={
+                <div className="w-[300px] sm:w-[320px] h-[360px] bg-white dark:bg-slate-900 flex flex-col items-center justify-center gap-2 text-slate-400">
+                  <Loader2 size={24} className="animate-spin text-indigo-500" />
+                  <span className="text-xs font-medium">Loading reactions...</span>
+                </div>
+              }
+            >
+              <EmojiPicker
+                onEmojiClick={handleCustomEmojiReact}
+                theme={
+                  typeof document !== 'undefined' &&
+                  document.documentElement.classList.contains('dark')
+                    ? 'dark'
+                    : 'light'
+                }
+                searchPlaceHolder="Search reactions..."
+                width={310}
+                height={360}
+                lazyLoadEmojis={true}
+                previewConfig={{ showPreview: false }}
+              />
+            </Suspense>
+          </div>
+        )}
+
+        {/* Message Bubble Card */}
+        <div
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onTouchMove={handleTouchEnd}
+          className={`rounded-2xl shadow-sm text-sm break-words relative transition-all overflow-hidden ${
+            isOutgoing
+              ? 'bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white rounded-br-xs shadow-indigo-950/20'
+              : 'bg-white dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 rounded-bl-xs border border-slate-200 dark:border-slate-700/50 shadow-xs dark:shadow-slate-950/40'
+          } ${imageAttachments.length > 0 ? 'p-1.5' : audioAttachments.length > 0 ? 'px-3 py-2' : 'px-4 py-2.5'}`}
+        >
         {/* 1. IMAGE COLLAGE / GRID RENDERING */}
         {imageAttachments.length > 0 && (
           <div className="relative rounded-xl overflow-hidden mb-1">
@@ -249,6 +437,35 @@ const MessageBubble = ({
             </span>
           )}
         </div>
+      </div>
+
+      {/* Attached Reaction Pill Badges */}
+      {hasReactions && (
+          <div
+            className={`absolute -bottom-2.5 ${
+              isOutgoing ? 'right-2' : 'left-2'
+            } z-20 flex flex-wrap gap-1 select-none pointer-events-auto`}
+          >
+            {Object.entries(reactionGroups).map(([emoji, group]) => (
+              <button
+                key={emoji}
+                type="button"
+                onClick={() => onToggleReaction(messageId, emoji)}
+                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs transition-all cursor-pointer shadow-xs active:scale-95 ${
+                  group.hasUserReacted
+                    ? 'bg-indigo-50 dark:bg-indigo-950/90 text-indigo-600 dark:text-indigo-400 border border-indigo-300 dark:border-indigo-600 font-bold ring-1 ring-indigo-400/40'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-medium hover:border-slate-300'
+                }`}
+                title={group.hasUserReacted ? 'Click to remove reaction' : 'Click to react'}
+              >
+                <span className="text-xs leading-none">{emoji}</span>
+                {group.count > 1 && (
+                  <span className="text-[11px] font-semibold leading-none">{group.count}</span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
