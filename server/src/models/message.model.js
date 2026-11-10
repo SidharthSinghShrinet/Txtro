@@ -19,14 +19,49 @@ const messageSchema = new mongoose.Schema({
     },
     message: {
         type: String,
-        required: true,
         trim: true,
+        default: ""
     },
     status: {
         type: String,
         enum: ["sent", "delivered", "read"],
         default: "sent"
-    }
+    },
+    //& Rollout 2 (Phase 8 - Multimedia Support)
+    messageType: {
+        type: String,
+        enum: ["text", "image", "document", "audio", "mixed"],
+        default: "text"
+    },
+    attachments: [
+        {
+            fileUrl: {
+                type: String,
+                required: true
+            },
+            fileName: {
+                type: String,
+                default: null
+            },
+            fileSize: {
+                type: Number,
+                default: null
+            },
+            mimeType: {
+                type: String,
+                default: null
+            },
+            duration: {
+                type: Number,  // Duration in seconds (e.g. 14 for 0:14)
+                default: 0
+            },
+            waveform: [
+                {
+                    type: Number  // Exact speech amplitude peaks (0 - 100)
+                }
+            ]
+        }
+    ]
 }, {
     timestamps: true
 });

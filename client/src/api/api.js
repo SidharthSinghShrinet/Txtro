@@ -29,6 +29,8 @@ export const getMessagesApi = (userId) => {
     return apiInstance.get(`/messages/${userId}`);
 }
 
-export const sendMessageApi = (message, userId) => {
-    return apiInstance.post(`/messages/send/${userId}`, { message });
+export const sendMessageApi = (payload, userId) => {
+    // payload can be a string (legacy) or an object: { message, fileUrl, messageType, fileName, fileSize, mimeType }
+    const body = typeof payload === "string" ? { message: payload } : payload;
+    return apiInstance.post(`/messages/send/${userId}`, body);
 }

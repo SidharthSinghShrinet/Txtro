@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, LogOut, MessageSquare, Users, Sun, Moon } from 'lucide-react';
+import { Search, LogOut, MessageSquare, Users, Sun, Moon, Image as ImageIcon, FileText, Mic, FolderOpen } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
 const Sidebar = ({
@@ -11,6 +11,7 @@ const Sidebar = ({
   searchQuery = '',
   onSearchChange = () => { },
   onLogout = () => { },
+  draftsMap = {},
 }) => {
   const { theme, toggleTheme } = useTheme();
 
@@ -23,6 +24,25 @@ const Sidebar = ({
     return isToday
       ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       : date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  };
+
+  const getDraftSnippet = (draft) => {
+    if (!draft) return '';
+    if (draft.text?.trim()) return draft.text.trim();
+
+    const files = draft.files || [];
+    if (files.length === 0) return '';
+
+    const hasImages = files.some((f) => f.type?.startsWith('image/'));
+    const hasDocs = files.some((f) => !f.type?.startsWith('image/'));
+
+    if (hasImages && hasDocs) {
+      return `${files.length} Files`;
+    }
+    if (hasDocs) {
+      return files.length > 1 ? `${files.length} Documents` : (files[0]?.name || 'Document');
+    }
+    return files.length > 1 ? `${files.length} Photos` : 'Photo';
   };
 
   return (
@@ -128,9 +148,8 @@ const Sidebar = ({
                   </div>
 
                   <span
-                    className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-slate-900 transition-colors ${
-                      isOnline ? 'bg-emerald-500 shadow-sm shadow-emerald-500/50' : 'bg-slate-400 dark:bg-slate-600'
-                    }`}
+                    className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-slate-900 transition-colors ${isOnline ? 'bg-emerald-500 shadow-sm shadow-emerald-500/50' : 'bg-slate-400 dark:bg-slate-600'
+                      }`}
                     title={isOnline ? 'Online' : 'Offline'}
                   />
                 </div>
@@ -151,18 +170,59 @@ const Sidebar = ({
 
                   {/* Row 2: Last Message Snippet (or @username) & Unread Badge */}
                   <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                    <p className={`truncate max-w-[150px] sm:max-w-[180px] ${contact.unreadCount > 0 && !isSelected ? 'font-semibold text-slate-900 dark:text-slate-100' : ''}`}>
-                      {contact.lastMessage ? (
+                    <div className={`truncate max-w-[150px] sm:max-w-[180px] flex items-center gap-1 ${contact.unreadCount > 0 && !isSelected ? 'font-semibold text-slate-900 dark:text-slate-100' : ''}`}>
+                      {draftsMap[contact._id] && (draftsMap[contact._id].text?.trim() || draftsMap[contact._id].files?.length > 0) ? (
+                        <span className="inline-flex items-center gap-1 font-medium truncate">
+                          <span className="text-green-500 dark:text-green-500 font-semibold shrink-0">Draft:</span>
+                          <span className="text-slate-500 dark:text-slate-400 truncate font-normal">
+                            {getDraftSnippet(draftsMap[contact._id])}
+                          </span>
+                        </span>
+                      ) : contact.lastMessage ? (
                         <>
                           {contact.lastMessage.senderId === currentUser?._id && (
-                            <span className="text-slate-400 dark:text-slate-500 font-normal">You: </span>
+                            <span className="text-slate-400 dark:text-slate-500 font-normal shrink-0">You: </span>
                           )}
-                          {contact.lastMessage.message}
+
+                          {/* Media Type Badges */}
+                          {contact.lastMessage.messageType === 'mixed' || (contact.lastMessage.attachments?.some(a => a.mimeType?.startsWith('image/')) && contact.lastMessage.attachments?.some(a => !a.mimeType?.startsWith('image/'))) ? (
+                            <span className="inline-flex items-center gap-1 text-violet-600 dark:text-violet-400 truncate">
+                              <FolderOpen size={13} className="shrink-0" />
+                              <span className="truncate">
+                                {contact.lastMessage.message || `${contact.lastMessage.attachments?.length || 0} Files`}
+                              </span>
+                            </span>
+                          ) : contact.lastMessage.messageType === 'image' || contact.lastMessage.attachments?.some(a => a.mimeType?.startsWith('image/')) ? (
+                            <span className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 truncate">
+                              <ImageIcon size={13} className="shrink-0" />
+                              <span className="truncate">
+                                {contact.lastMessage.message || (
+                                  (contact.lastMessage.attachments?.filter(a => a.mimeType?.startsWith('image/')).length || 1) > 1
+                                    ? `${contact.lastMessage.attachments.filter(a => a.mimeType?.startsWith('image/')).length} Photos`
+                                    : 'Photo'
+                                )}
+                              </span>
+                            </span>
+                          ) : contact.lastMessage.messageType === 'audio' || contact.lastMessage.attachments?.some(a => a.mimeType?.startsWith('audio/')) ? (
+                            <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 truncate">
+                              <Mic size={13} className="shrink-0" />
+                              <span className="truncate">Voice note</span>
+                            </span>
+                          ) : contact.lastMessage.messageType === 'document' || contact.lastMessage.attachments?.some(a => !a.mimeType?.startsWith('image/') && !a.mimeType?.startsWith('audio/')) ? (
+                            <span className="inline-flex items-center gap-1 text-slate-700 dark:text-slate-300 truncate">
+                              <FileText size={13} className="shrink-0" />
+                              <span className="truncate">
+                                {contact.lastMessage.message || contact.lastMessage.attachments?.[0]?.fileName || 'Document'}
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="truncate">{contact.lastMessage.message}</span>
+                          )}
                         </>
                       ) : (
-                        `@${contact.username}`
+                        <span className="truncate">@{contact.username}</span>
                       )}
-                    </p>
+                    </div>
 
                     {/* Unread Message Count Badge */}
                     {contact.unreadCount > 0 && !isSelected && (

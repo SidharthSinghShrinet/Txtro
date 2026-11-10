@@ -7,6 +7,12 @@ import { useSocket } from '../context/SocketContext';
 import toast from 'react-hot-toast';
 import { getAllUsersWithMetadataApi, getMessagesApi, sendMessageApi } from '../api/api';
 import { useEffect } from 'react';
+import { uploadFilesDirectlyToCloud } from '../utils/fileUpload';
+import {
+    saveDraftToStorage,
+    deleteDraftFromStorage,
+    getAllDraftFromStorage,
+} from '../utils/draftStorage';
 
 function HomePage() {
     const { user, logout } = useAuth();
@@ -18,9 +24,27 @@ function HomePage() {
     const [messageInput, setMessageInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const typingTimeoutRef = useRef(null);
-
+    const [selectedFiles, setSelectedFiles] = useState([]);
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const abortUploadRef = useRef(null);
+    const [draftsMap, setDraftsMap] = useState({});
+    const draftDebounceRef = useRef(null);
     //All users
     const [users, setUsers] = useState([]);
+
+    // Load saved drafts from IndexedDB on initial mount
+    useEffect(() => {
+        async function loadDrafts() {
+            try {
+                const drafts = await getAllDraftFromStorage();
+                setDraftsMap(drafts || {});
+            } catch (err) {
+                console.warn("Could not load drafts from IndexedDB:", err);
+            }
+        }
+        loadDrafts();
+    }, []);
 
     // Sample contacts (Replace with your actual users from GET /api/v1/users/all)
     useEffect(() => {
@@ -50,18 +74,22 @@ function HomePage() {
             try {
                 const response = await getMessagesApi(selectedUser?._id);
                 if (response?.status === 200) {
-                    setMessages(response?.data?.data);
-                    // Ensure unread counter for this contact is reset to 0 in sidebar users list
+                    const fetchedMessages = response?.data?.data || [];
+                    setMessages(fetchedMessages);
+
+                    const latestMessage = fetchedMessages.length > 0
+                        ? fetchedMessages[fetchedMessages.length - 1]
+                        : null;
+
+                    // Ensure unread counter is reset & lastMessage strictly mirrors DB source of truth
                     setUsers((prev) =>
                         prev.map((u) =>
                             u?._id === selectedUser?._id
                                 ? {
-                                      ...u,
-                                      unreadCount: 0,
-                                      lastMessage: u.lastMessage
-                                          ? { ...u.lastMessage, status: "read" }
-                                          : u.lastMessage,
-                                  }
+                                    ...u,
+                                    unreadCount: 0,
+                                    lastMessage: latestMessage,
+                                }
                                 : u
                         )
                     );
@@ -76,28 +104,72 @@ function HomePage() {
 
     // UI Handlers
     const handleSelectUser = (contact) => {
+        // 1. Save active draft for previous contact before switching
+        if (selectedUser && selectedUser._id !== contact?._id) {
+            const outgoingText = messageInput;
+            const outgoingFiles = selectedFiles;
+            saveDraftToStorage(selectedUser._id, outgoingText, outgoingFiles);
+            setDraftsMap((prev) => {
+                const hasDraft = Boolean(outgoingText?.trim()) || outgoingFiles?.length > 0;
+                if (!hasDraft) {
+                    const copy = { ...prev };
+                    delete copy[selectedUser._id];
+                    return copy;
+                }
+                return {
+                    ...prev,
+                    [selectedUser._id]: { text: outgoingText, files: outgoingFiles },
+                };
+            });
+        }
+
         setSelectedUser(contact);
         setIsTyping(false);
         if (typingTimeoutRef.current) {
             clearTimeout(typingTimeoutRef.current);
         }
+
+        // 2. Restore incoming contact's draft (text + staged files)
+        const incomingDraft = draftsMap[contact?._id] || null;
+        setMessageInput(incomingDraft?.text || "");
+        setSelectedFiles(incomingDraft?.files || []);
+
         // Always reset unread counter for this contact to 0
         setUsers((prev) =>
             prev.map((u) =>
                 u?._id === contact?._id
                     ? {
-                          ...u,
-                          unreadCount: 0,
-                          lastMessage: u.lastMessage
-                              ? { ...u.lastMessage, status: "read" }
-                              : u.lastMessage,
-                      }
+                        ...u,
+                        unreadCount: 0,
+                        lastMessage: u.lastMessage
+                            ? { ...u.lastMessage, status: "read" }
+                            : u.lastMessage,
+                    }
                     : u
             )
         );
     };
 
     const handleBackToSidebar = () => {
+        // Save current draft before going back on mobile
+        if (selectedUser) {
+            const outgoingText = messageInput;
+            const outgoingFiles = selectedFiles;
+            saveDraftToStorage(selectedUser._id, outgoingText, outgoingFiles);
+            setDraftsMap((prev) => {
+                const hasDraft = Boolean(outgoingText?.trim()) || outgoingFiles?.length > 0;
+                if (!hasDraft) {
+                    const copy = { ...prev };
+                    delete copy[selectedUser._id];
+                    return copy;
+                }
+                return {
+                    ...prev,
+                    [selectedUser._id]: { text: outgoingText, files: outgoingFiles },
+                };
+            });
+        }
+
         setSelectedUser(null);
         setIsTyping(false);
         if (typingTimeoutRef.current) {
@@ -109,6 +181,26 @@ function HomePage() {
     const handleMessageInputChange = (e) => {
         const value = e.target.value;
         setMessageInput(value);
+
+        // Auto-save draft to IndexedDB (debounced ~300ms)
+        if (selectedUser) {
+            if (draftDebounceRef.current) clearTimeout(draftDebounceRef.current);
+            draftDebounceRef.current = setTimeout(() => {
+                saveDraftToStorage(selectedUser._id, value, selectedFiles);
+                setDraftsMap((prev) => {
+                    const hasDraft = Boolean(value?.trim()) || selectedFiles?.length > 0;
+                    if (!hasDraft) {
+                        const copy = { ...prev };
+                        delete copy[selectedUser._id];
+                        return copy;
+                    }
+                    return {
+                        ...prev,
+                        [selectedUser._id]: { text: value, files: selectedFiles },
+                    };
+                });
+            }, 300);
+        }
 
         if (!socket || !selectedUser) return;
 
@@ -128,7 +220,7 @@ function HomePage() {
 
     const handleSendMessage = async (e) => {
         e.preventDefault();
-        if (!messageInput.trim() || !selectedUser) return;
+        if ((!messageInput.trim() && selectedFiles.length === 0) || !selectedUser) return;
 
         // Stop typing immediately when message is submitted
         if (typingTimeoutRef.current) {
@@ -138,26 +230,254 @@ function HomePage() {
             socket.emit("stopTyping", { receiverId: selectedUser._id });
         }
 
-        try {
-            const response = await sendMessageApi(messageInput, selectedUser?._id);
-            if (response?.status === 200 || response?.status === 201) {
-                const sentMsg = response?.data?.data;
-                setMessages((prev) => [...prev, sentMsg]);
-                setMessageInput("");
+        const currentText = messageInput.trim();
+        const currentFiles = [...selectedFiles];
 
-                // Update lastMessage and move contact to top of sidebar
-                setUsers((prev) => {
-                    return prev
-                        .map((u) => (u._id === selectedUser._id ? { ...u, lastMessage: sentMsg } : u))
-                        .sort((a, b) => {
-                            const timeA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
-                            const timeB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
-                            return timeB - timeA;
-                        });
+        // 1. Clear input & staging dock immediately (snappy instant feel)
+        setMessageInput("");
+        setSelectedFiles([]);
+
+        // Clear active draft from IndexedDB & memory
+        if (selectedUser) {
+            deleteDraftFromStorage(selectedUser._id);
+            setDraftsMap((prev) => {
+                const copy = { ...prev };
+                delete copy[selectedUser._id];
+                return copy;
+            });
+        }
+
+        // 2. Build local Optimistic Message (0 ms latency!)
+        const tempId = `temp-${Date.now()}`;
+        const optimisticAttachments = currentFiles.map((file) => ({
+            fileUrl: URL.createObjectURL(file), // Instant in-memory blob preview
+            fileName: file.name,
+            fileSize: file.size,
+            mimeType: file.type,
+        }));
+
+        const hasImages = currentFiles.some((f) => f.type?.startsWith("image/"));
+        const hasAudio = currentFiles.some((f) => f.type?.startsWith("audio/"));
+        const hasDocs = currentFiles.some((f) => !f.type?.startsWith("image/") && !f.type?.startsWith("audio/"));
+
+        let optimisticMessageType = "text";
+        if (currentFiles.length > 0) {
+            if (hasImages && hasDocs) optimisticMessageType = "mixed";
+            else if (hasAudio) optimisticMessageType = "audio";
+            else if (hasImages) optimisticMessageType = "image";
+            else optimisticMessageType = "document";
+        }
+
+        const optimisticMessage = {
+            _id: tempId,
+            senderId: user._id,
+            receiverId: selectedUser._id,
+            message: currentText,
+            status: "sending", // Shows the sleek clock icon
+            messageType: optimisticMessageType,
+            attachments: optimisticAttachments,
+            createdAt: new Date().toISOString(),
+        };
+
+        // Instantly push optimistic bubble into chat stream
+        setMessages((prev) => [...prev, optimisticMessage]);
+
+        // Capture previous lastMessage before optimistic update for clean rollback on error
+        const previousLastMessage = users.find((u) => u._id === selectedUser._id)?.lastMessage;
+
+        // Optimistically update last message in sidebar
+        setUsers((prev) => {
+            return prev
+                .map((u) => (u._id === selectedUser._id ? { ...u, lastMessage: optimisticMessage } : u))
+                .sort((a, b) => {
+                    const timeA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
+                    const timeB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
+                    return timeB - timeA;
+                });
+        });
+
+        try {
+            let uploadedAttachments = [];
+            let uploadIntentId = null;
+            // 3. Upload files to OCI in background with live progress tracking & abort capability
+            if (currentFiles.length > 0) {
+                setIsUploading(true);
+                setUploadProgress(0);
+                const uploadResult = await uploadFilesDirectlyToCloud(
+                    currentFiles,
+                    (percent) => {
+                        setUploadProgress(percent);
+                    },
+                    (abortFn) => {
+                        abortUploadRef.current = abortFn;
+                    }
+                );
+                uploadedAttachments = uploadResult?.attachments || [];
+                uploadIntentId = uploadResult?.uploadIntentId || null;
+            }
+
+            // 4. Send message to backend
+            const response = await sendMessageApi({
+                message: currentText,
+                attachments: uploadedAttachments,
+                uploadIntentId
+            }, selectedUser._id);
+
+            if (response?.status === 200 || response?.status === 201) {
+                const confirmedMsg = response?.data?.data;
+
+                // 5. Swap out optimistic message with the confirmed permanent message
+                setMessages((prev) =>
+                    prev.map((msg) => (msg._id === tempId ? confirmedMsg : msg))
+                );
+
+                // Update sidebar with confirmed message
+                setUsers((prev) =>
+                    prev.map((u) => (u._id === selectedUser._id ? { ...u, lastMessage: confirmedMsg } : u))
+                );
+
+                // Revoke temporary blob URLs to free browser RAM
+                optimisticAttachments.forEach((att) => {
+                    if (typeof att.fileUrl === "string" && att.fileUrl.startsWith("blob:")) {
+                        try { URL.revokeObjectURL(att.fileUrl); } catch { }
+                    }
                 });
             }
         } catch (error) {
-            toast.error(error?.response?.data?.message || error?.message);
+            // Revoke temporary blob URLs if message aborted or failed
+            optimisticAttachments.forEach((att) => {
+                if (typeof att.fileUrl === "string" && att.fileUrl.startsWith("blob:")) {
+                    try { URL.revokeObjectURL(att.fileUrl); } catch { }
+                }
+            });
+
+            // Revert optimistic lastMessage in sidebar so failed message never lingers as ghost
+            setUsers((prev) =>
+                prev.map((u) => (u._id === selectedUser._id ? { ...u, lastMessage: previousLastMessage } : u))
+            );
+
+            if (error?.message === "Upload aborted by user") {
+                toast("Upload cancelled", { icon: "🚫" });
+                // Remove the optimistic bubble completely from the stream
+                setMessages((prev) => prev.filter((msg) => msg._id !== tempId));
+            } else {
+                toast.error(error?.response?.data?.message || error?.message || "Failed to send message");
+                // Mark optimistic message as failed with a red indicator
+                setMessages((prev) =>
+                    prev.map((msg) => (msg._id === tempId ? { ...msg, status: "failed" } : msg))
+                );
+            }
+        } finally {
+            setIsUploading(false);
+            setUploadProgress(0);
+            abortUploadRef.current = null;
+        }
+    };
+
+    const handleSendAudio = async (audioFile, duration, waveform = []) => {
+        if (!audioFile || !selectedUser) return;
+
+        if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+        }
+        if (socket && selectedUser) {
+            socket.emit("stopTyping", { receiverId: selectedUser._id });
+        }
+
+        const tempId = `temp-audio-${Date.now()}`;
+        const blobUrl = URL.createObjectURL(audioFile);
+        const optimisticAttachment = {
+            fileUrl: blobUrl,
+            fileName: audioFile.name,
+            fileSize: audioFile.size,
+            mimeType: audioFile.type || "audio/webm",
+            duration: duration || 1,
+            waveform: waveform || [],
+        };
+
+        const optimisticMessage = {
+            _id: tempId,
+            senderId: user._id,
+            receiverId: selectedUser._id,
+            message: "",
+            status: "sending",
+            messageType: "audio",
+            attachments: [optimisticAttachment],
+            createdAt: new Date().toISOString(),
+        };
+
+        setMessages((prev) => [...prev, optimisticMessage]);
+
+        const previousLastMessage = users.find((u) => u._id === selectedUser._id)?.lastMessage;
+
+        setUsers((prev) => {
+            return prev
+                .map((u) => (u._id === selectedUser._id ? { ...u, lastMessage: optimisticMessage } : u))
+                .sort((a, b) => {
+                    const timeA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
+                    const timeB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
+                    return timeB - timeA;
+                });
+        });
+
+        try {
+            setIsUploading(true);
+            setUploadProgress(0);
+
+            // Upload audio file directly to Oracle Cloud Infrastructure (OCI)
+            const uploadResult = await uploadFilesDirectlyToCloud(
+                [audioFile],
+                (percent) => setUploadProgress(percent),
+                (abortFn) => { abortUploadRef.current = abortFn; }
+            );
+
+            const uploadedAttachments = uploadResult?.attachments?.map((att) => ({
+                ...att,
+                duration: duration || 1,
+                waveform: waveform || [],
+            })) || [];
+            const uploadIntentId = uploadResult?.uploadIntentId || null;
+
+            const response = await sendMessageApi({
+                message: "",
+                attachments: uploadedAttachments,
+                messageType: "audio",
+                uploadIntentId
+            }, selectedUser._id);
+
+            if (response?.status === 200 || response?.status === 201) {
+                const confirmedMsg = response?.data?.data;
+
+                setMessages((prev) =>
+                    prev.map((msg) => (msg._id === tempId ? confirmedMsg : msg))
+                );
+
+                setUsers((prev) =>
+                    prev.map((u) => (u._id === selectedUser._id ? { ...u, lastMessage: confirmedMsg } : u))
+                );
+
+                try { URL.revokeObjectURL(blobUrl); } catch { }
+            }
+        } catch (error) {
+            try { URL.revokeObjectURL(blobUrl); } catch { }
+
+            setUsers((prev) =>
+                prev.map((u) => (u._id === selectedUser._id ? { ...u, lastMessage: previousLastMessage } : u))
+            );
+
+            if (error?.message === "Upload aborted by user") {
+                toast("Audio upload cancelled", { icon: "🚫" });
+                setMessages((prev) => prev.filter((msg) => msg._id !== tempId));
+            } else {
+                toast.error(error?.response?.data?.message || error?.message || "Failed to send audio note");
+                setMessages((prev) =>
+                    prev.map((msg) => (msg._id === tempId ? { ...msg, status: "failed" } : msg))
+                );
+            }
+        } finally {
+            setIsUploading(false);
+            setUploadProgress(0);
+            abortUploadRef.current = null;
         }
     };
 
@@ -290,6 +610,7 @@ function HomePage() {
                         searchQuery={searchQuery}
                         onSearchChange={(e) => setSearchQuery(e.target.value)}
                         onLogout={logout}
+                        draftsMap={draftsMap}
                     />
                 </div>
 
@@ -297,6 +618,7 @@ function HomePage() {
                 <div className={`flex-1 h-full ${!selectedUser ? 'hidden md:flex' : 'flex'}`}>
                     {selectedUser ? (
                         <ChatContainer
+                            key={selectedUser?._id}
                             selectedUser={selectedUser}
                             currentUser={user}
                             isOnline={onlineUsers?.includes(selectedUser?._id)}
@@ -305,7 +627,52 @@ function HomePage() {
                             messageText={messageInput}
                             onMessageChange={handleMessageInputChange}
                             onSendMessage={handleSendMessage}
+                            onSendAudio={handleSendAudio}
                             onBack={handleBackToSidebar}
+                            selectedFiles={selectedFiles}
+                            onFilesSelect={(newFiles) => {
+                                if (selectedFiles.length + newFiles.length > 10) {
+                                    toast.error("You can select up to 10 files at once");
+                                    return;
+                                }
+                                const updatedFiles = [...selectedFiles, ...newFiles];
+                                setSelectedFiles(updatedFiles);
+                                if (selectedUser) {
+                                    saveDraftToStorage(selectedUser._id, messageInput, updatedFiles);
+                                    setDraftsMap((prev) => ({
+                                        ...prev,
+                                        [selectedUser._id]: { text: messageInput, files: updatedFiles },
+                                    }));
+                                }
+                            }}
+                            onFileRemove={(indexToRemove) => {
+                                const updatedFiles = indexToRemove === 'all'
+                                    ? []
+                                    : selectedFiles.filter((_, idx) => idx !== indexToRemove);
+                                setSelectedFiles(updatedFiles);
+                                if (selectedUser) {
+                                    saveDraftToStorage(selectedUser._id, messageInput, updatedFiles);
+                                    setDraftsMap((prev) => {
+                                        const hasDraft = Boolean(messageInput?.trim()) || updatedFiles.length > 0;
+                                        if (!hasDraft) {
+                                            const copy = { ...prev };
+                                            delete copy[selectedUser._id];
+                                            return copy;
+                                        }
+                                        return {
+                                            ...prev,
+                                            [selectedUser._id]: { text: messageInput, files: updatedFiles },
+                                        };
+                                    });
+                                }
+                            }}
+                            isUploading={isUploading}
+                            uploadProgress={uploadProgress}
+                            onCancelUpload={() => {
+                                if (abortUploadRef.current) {
+                                    abortUploadRef.current();
+                                }
+                            }}
                         />
                     ) : (
                         <NoChatSelected />

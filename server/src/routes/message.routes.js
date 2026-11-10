@@ -1,7 +1,17 @@
 import Router from "express";
-import { getMessage, sendMessage } from "../controllers/message.controller.js";
+import { abortUpload, getMessage, getUploadUrl, sendMessage } from "../controllers/message.controller.js";
 import authenticate from "../middlewares/auth.middleware.js";
 const router = Router();
+
+//& @desc    Getting direct upload ticket (Browser Upload -> OCI Storage)
+//& @route   POST /api/v1/messages/upload-url
+//& @access  Private
+router.post("/upload-url", authenticate, getUploadUrl);
+
+//& @desc    Abort an upload and clean up completed files
+//& @route   POST /api/v1/messages/abort-upload
+//& @access  Private
+router.post("/abort-upload", authenticate, abortUpload);
 
 //& @desc    Send a message
 //& @route   POST /api/v1/messages/send/:id
