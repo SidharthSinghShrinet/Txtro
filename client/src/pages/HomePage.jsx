@@ -22,6 +22,7 @@ function HomePage() {
     const [selectedUser, setSelectedUser] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [messageInput, setMessageInput] = useState('');
+    const [replyingToMessage, setReplyingToMessage] = useState(null);
     const [isTyping, setIsTyping] = useState(false);
     const typingTimeoutRef = useRef(null);
     const [selectedFiles, setSelectedFiles] = useState([]);
@@ -124,6 +125,7 @@ function HomePage() {
         }
 
         setSelectedUser(contact);
+        setReplyingToMessage(null);
         setIsTyping(false);
         if (typingTimeoutRef.current) {
             clearTimeout(typingTimeoutRef.current);
@@ -171,6 +173,7 @@ function HomePage() {
         }
 
         setSelectedUser(null);
+        setReplyingToMessage(null);
         setIsTyping(false);
         if (typingTimeoutRef.current) {
             clearTimeout(typingTimeoutRef.current);
@@ -232,10 +235,12 @@ function HomePage() {
 
         const currentText = messageInput.trim();
         const currentFiles = [...selectedFiles];
+        const currentReplyTo = replyingToMessage;
 
         // 1. Clear input & staging dock immediately (snappy instant feel)
         setMessageInput("");
         setSelectedFiles([]);
+        setReplyingToMessage(null);
 
         // Clear active draft from IndexedDB & memory
         if (selectedUser) {
@@ -276,6 +281,17 @@ function HomePage() {
             status: "sending", // Shows the sleek clock icon
             messageType: optimisticMessageType,
             attachments: optimisticAttachments,
+            replyTo: currentReplyTo?._id || null,
+            replySnapshot: currentReplyTo ? {
+                senderId: currentReplyTo.senderId?._id || currentReplyTo.senderId,
+                senderName: (currentReplyTo.senderId?._id || currentReplyTo.senderId) === user._id
+                    ? "You"
+                    : (selectedUser?.fullname || selectedUser?.username || "User"),
+                message: currentReplyTo.message || "",
+                messageType: currentReplyTo.messageType || "text",
+                fileUrl: currentReplyTo.attachments?.[0]?.fileUrl || null,
+                fileName: currentReplyTo.attachments?.[0]?.fileName || null,
+            } : null,
             createdAt: new Date().toISOString(),
         };
 
@@ -320,7 +336,8 @@ function HomePage() {
             const response = await sendMessageApi({
                 message: currentText,
                 attachments: uploadedAttachments,
-                uploadIntentId
+                uploadIntentId,
+                replyTo: currentReplyTo?._id || null
             }, selectedUser._id);
 
             if (response?.status === 200 || response?.status === 201) {
@@ -384,6 +401,9 @@ function HomePage() {
             socket.emit("stopTyping", { receiverId: selectedUser._id });
         }
 
+        const currentReplyTo = replyingToMessage;
+        setReplyingToMessage(null);
+
         const tempId = `temp-audio-${Date.now()}`;
         const blobUrl = URL.createObjectURL(audioFile);
         const optimisticAttachment = {
@@ -403,6 +423,17 @@ function HomePage() {
             status: "sending",
             messageType: "audio",
             attachments: [optimisticAttachment],
+            replyTo: currentReplyTo?._id || null,
+            replySnapshot: currentReplyTo ? {
+                senderId: currentReplyTo.senderId?._id || currentReplyTo.senderId,
+                senderName: (currentReplyTo.senderId?._id || currentReplyTo.senderId) === user._id
+                    ? "You"
+                    : (selectedUser?.fullname || selectedUser?.username || "User"),
+                message: currentReplyTo.message || "",
+                messageType: currentReplyTo.messageType || "text",
+                fileUrl: currentReplyTo.attachments?.[0]?.fileUrl || null,
+                fileName: currentReplyTo.attachments?.[0]?.fileName || null,
+            } : null,
             createdAt: new Date().toISOString(),
         };
 
@@ -442,7 +473,8 @@ function HomePage() {
                 message: "",
                 attachments: uploadedAttachments,
                 messageType: "audio",
-                uploadIntentId
+                uploadIntentId,
+                replyTo: currentReplyTo?._id || null
             }, selectedUser._id);
 
             if (response?.status === 200 || response?.status === 201) {
@@ -740,6 +772,9 @@ function HomePage() {
                             }}
                             isUploading={isUploading}
                             uploadProgress={uploadProgress}
+                            replyingToMessage={replyingToMessage}
+                            onSelectReply={setReplyingToMessage}
+                            onCancelReply={() => setReplyingToMessage(null)}
                             onCancelUpload={() => {
                                 if (abortUploadRef.current) {
                                     abortUploadRef.current();

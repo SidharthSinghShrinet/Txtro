@@ -91,7 +91,7 @@ const abortUpload = expressAsyncHandler(async (req, res) => {
 const sendMessage = expressAsyncHandler(async (req, res, next) => {
     const senderId = req.user._id;
     const receiverId = req.params.id;
-    const { message = "", attachments = [], messageType = "text", uploadIntentId } = req.body;
+    const { message = "", attachments = [], messageType = "text", uploadIntentId, replyTo } = req.body;
     const hasTextMessage = Boolean(message && message.trim());
     const hasAttachments = Array.isArray(attachments) && attachments.length > 0;
     if (!hasTextMessage && !hasAttachments) {
@@ -125,6 +125,21 @@ const sendMessage = expressAsyncHandler(async (req, res, next) => {
         }
     }
 
+    // Build immutable reply snapshot if replying to an existing message (Phase 11)
+    let replySnapshot = null;
+    if (replyTo) {
+        const originalMsg = await messageModel.findById(replyTo).populate("senderId", "fullname username");
+        if (originalMsg) {
+            replySnapshot = {
+                senderId: originalMsg.senderId?._id || originalMsg.senderId,
+                senderName: originalMsg.senderId?.fullname || originalMsg.senderId?.username || "User",
+                message: originalMsg.message || "",
+                messageType: originalMsg.messageType || "text",
+                fileUrl: originalMsg.attachments?.[0]?.fileUrl || null,
+                fileName: originalMsg.attachments?.[0]?.fileName || null
+            }
+        }
+    }
     const newMessage = await messageModel.create({
         senderId,
         receiverId,
@@ -132,8 +147,9 @@ const sendMessage = expressAsyncHandler(async (req, res, next) => {
         message: message ? message.trim() : "",
         status: initialStatus,
         messageType: finalMessageType,
-        attachments: attachments
-
+        attachments: attachments,
+        replyTo: replyTo || null,  // <--- // Pointer for jump-to-message
+        replySnapshot: replySnapshot
     })
     // If an uploadIntentId was sent, mark it as completed (or delete it)
     if (uploadIntentId) {

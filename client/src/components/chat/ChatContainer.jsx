@@ -33,6 +33,9 @@ const ChatContainer = ({
   isUploading = false,
   uploadProgress = 0,
   onCancelUpload = () => { },
+  replyingToMessage = null,
+  onSelectReply = () => { },
+  onCancelReply = () => { },
 }) => {
   const messagesEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
@@ -42,6 +45,23 @@ const ChatContainer = ({
   const [newMessagesCount, setNewMessagesCount] = useState(0);
   const isNearBottomRef = useRef(true);
   const prevMessagesLengthRef = useRef(messages.length);
+
+  // Jump-to-message Highlight Pulse State (Phase 11)
+  const [highlightedMessageId, setHighlightedMessageId] = useState(null);
+  const highlightTimerRef = useRef(null);
+
+  const handleJumpToMessage = (targetMessageId) => {
+    if (!targetMessageId) return;
+    const el = document.getElementById(`msg-${targetMessageId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightedMessageId(targetMessageId);
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+      highlightTimerRef.current = setTimeout(() => {
+        setHighlightedMessageId(null);
+      }, 2000);
+    }
+  };
 
   // YARL Lightbox Carousel State
   const [lightboxIndex, setLightboxIndex] = useState(-1);
@@ -233,8 +253,13 @@ const ChatContainer = ({
                     messageType={msg.messageType || 'text'}
                     attachments={msg.attachments || []}
                     reactions={msg.reactions || []}
+                    replyTo={msg.replyTo}
+                    replySnapshot={msg.replySnapshot}
+                    isHighlighted={highlightedMessageId === msg._id}
                     currentUserId={currentUser?._id}
                     onToggleReaction={onToggleReaction}
+                    onSelectReply={() => onSelectReply(msg)}
+                    onJumpToMessage={handleJumpToMessage}
                     uploadProgress={uploadProgress}
                     onCancelUpload={onCancelUpload}
                     onImageClick={handleOpenLightbox}
@@ -292,6 +317,9 @@ const ChatContainer = ({
         onFileRemove={onFileRemove}
         isUploading={isUploading}
         uploadProgress={uploadProgress}
+        replyingTo={replyingToMessage}
+        onCancelReply={onCancelReply}
+        currentUserId={currentUser?._id}
       />
 
       {/* Professional YARL Lightbox with Carousel, Zoom, Download & Thumbnails */}

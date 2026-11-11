@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, lazy, Suspense } from 'react';
-import { Send, Paperclip, Smile, X, FileText, Loader2, Mic, Trash2, Pause, Play } from 'lucide-react';
+import { Send, Paperclip, Smile, X, FileText, Loader2, Mic, Trash2, Pause, Play, Reply, Image as ImageIcon } from 'lucide-react';
 import { useAudioRecorder, formatAudioDuration } from '../../hooks/useAudioRecorder';
 
 // Lazy-loaded Emoji Picker (0 KB initial bundle footprint + hover prefetch)
@@ -21,6 +21,9 @@ const MessageInput = ({
   onFileRemove = () => { },
   isUploading = false,
   uploadProgress = 0,
+  replyingTo = null,
+  onCancelReply = () => { },
+  currentUserId = null,
 }) => {
   const fileInputRef = useRef(null);
 
@@ -78,6 +81,13 @@ const MessageInput = ({
     document.addEventListener('pointerdown', handleClickOutside);
     return () => document.removeEventListener('pointerdown', handleClickOutside);
   }, [showEmojiPicker]);
+
+  // Auto-focus input when a message is selected for reply (Phase 11)
+  useEffect(() => {
+    if (replyingTo) {
+      textInputRef.current?.focus();
+    }
+  }, [replyingTo]);
 
   // Insert emoji at cursor position
   const handleEmojiSelect = (emojiData) => {
@@ -187,6 +197,11 @@ const MessageInput = ({
   };
 
   const handleKeyDown = (e) => {
+    if (e.key === 'Escape' && replyingTo) {
+      e.preventDefault();
+      onCancelReply();
+      return;
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       if (!disabled && (value.trim() || selectedFiles.length > 0) && !isUploading) {
@@ -246,6 +261,69 @@ const MessageInput = ({
           </Suspense>
         </div>
       )}
+      {/* Floating Quoted Message Reply Dock (Phase 11) */}
+      {replyingTo && (() => {
+        const replyingSenderId = (replyingTo.senderId?._id || replyingTo.senderId)?.toString();
+        const isReplyingToSelf = currentUserId && replyingSenderId === currentUserId.toString();
+        const replyingAuthor = isReplyingToSelf
+          ? 'yourself'
+          : (replyingTo.senderId?.fullname || replyingTo.senderId?.username || replyingTo.senderName || 'user');
+
+        return (
+          <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-slate-100/90 dark:bg-slate-800/90 border-b border-slate-200/80 dark:border-slate-700/80 text-xs animate-in slide-in-from-bottom-2 duration-150 backdrop-blur-md">
+            <div className="flex items-center gap-2.5 min-w-0 border-l-3 border-indigo-600 dark:border-indigo-400 pl-2.5">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 font-bold text-indigo-600 dark:text-indigo-400 text-xs">
+                  <Reply size={13} className="shrink-0" />
+                  <span className="truncate">Replying to {replyingAuthor}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 truncate mt-0.5 max-w-xs sm:max-w-md">
+                  {replyingTo.messageType === 'image' && (
+                    <>
+                      <ImageIcon size={13} className="shrink-0 text-slate-500" />
+                      <span>Photo</span>
+                    </>
+                  )}
+                  {replyingTo.messageType === 'audio' && (
+                    <>
+                      <Mic size={13} className="shrink-0 text-slate-500" />
+                      <span>Voice message</span>
+                    </>
+                  )}
+                  {replyingTo.messageType === 'document' && (
+                    <>
+                      <FileText size={13} className="shrink-0 text-slate-500" />
+                      <span className="truncate">{replyingTo.attachments?.[0]?.fileName || 'Document'}</span>
+                    </>
+                  )}
+                  {(replyingTo.messageType === 'text' || !replyingTo.messageType || replyingTo.message) && (
+                    <span className="truncate">{replyingTo.message || 'Media'}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {replyingTo.attachments?.[0]?.fileUrl && replyingTo.messageType === 'image' && (
+                <img
+                  src={replyingTo.attachments[0].fileUrl}
+                  alt="thumb"
+                  className="w-9 h-9 rounded-lg object-cover border border-slate-200 dark:border-slate-700"
+                />
+              )}
+              <button
+                type="button"
+                onClick={onCancelReply}
+                className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                title="Cancel reply (Esc)"
+              >
+                <X size={15} />
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* File Attachment Staging Preview Dock */}
       {selectedFiles.length > 0 && (
         <div className="px-4 pt-2.5 pb-2 border-b border-slate-100 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/40">

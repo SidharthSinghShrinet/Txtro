@@ -75,7 +75,41 @@ const messageSchema = new mongoose.Schema({
                 required: true
             }
         }
-    ]
+    ],
+    replyTo: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Message",
+        default: null
+    },
+    replySnapshot: {
+        _id: false, // 👈 Prevents Mongoose from generating an unwanted subdocument ID
+        senderId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            default: null
+        },
+        senderName: {
+            type: String,
+            default: ""
+        },
+        message: {
+            type: String,
+            default: ""
+        },
+        messageType: {
+            type: String,
+            enum: ["text", "image", "document", "audio", "mixed"],
+            default: "text"
+        },
+        fileUrl: {
+            type: String,
+            default: null
+        },
+        fileName: {
+            type: String,
+            default: null
+        }
+    }
 }, {
     timestamps: true
 });
