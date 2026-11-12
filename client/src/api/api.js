@@ -38,3 +38,11 @@ export const sendMessageApi = (payload, userId) => {
 export const toggleReactionApi = (messageId, emoji) => {
     return apiInstance.post(`/messages/react/${messageId}`, { emoji });
 }
+
+export const deleteForMeApi = (messageId) => {
+    return apiInstance.delete(`/messages/delete-for-me/${messageId}`);
+}
+
+export const deleteForEveryoneApi = (messageId) => {
+    return apiInstance.delete(`/messages/delete-for-everyone/${messageId}`);
+}

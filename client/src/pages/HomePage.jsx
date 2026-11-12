@@ -5,7 +5,7 @@ import NoChatSelected from '../components/chat/NoChatSelected';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import toast from 'react-hot-toast';
-import { getAllUsersWithMetadataApi, getMessagesApi, sendMessageApi, toggleReactionApi } from '../api/api';
+import { getAllUsersWithMetadataApi, getMessagesApi, sendMessageApi, toggleReactionApi, deleteForMeApi, deleteForEveryoneApi } from '../api/api';
 import { useEffect } from 'react';
 import { uploadFilesDirectlyToCloud } from '../utils/fileUpload';
 import {
@@ -573,6 +573,70 @@ function HomePage() {
         }
     };
 
+    // Handle Delete Message (Phase 12: Dual Deletion Modes)
+    const handleDeleteMessage = async (messageId, deleteType) => {
+        if (!messageId || !selectedUser) return;
+
+        const previousMessages = [...messages];
+        const targetMsg = messages.find((m) => m._id === messageId);
+        if (!targetMsg) return;
+
+        if (deleteType === "me") {
+            // 1. Optimistic removal for current user (0ms perceived latency)
+            const updatedMessages = messages.filter((m) => m._id !== messageId);
+            setMessages(updatedMessages);
+
+            const newLatestMessage = updatedMessages.length > 0 ? updatedMessages[updatedMessages.length - 1] : null;
+            setUsers((prev) =>
+                prev.map((u) => (u._id === selectedUser._id ? { ...u, lastMessage: newLatestMessage } : u))
+            );
+
+            try {
+                await deleteForMeApi(messageId);
+                toast.success("Message deleted for you");
+            } catch (err) {
+                console.error("Failed to delete message for me:", err);
+                setMessages(previousMessages);
+                toast.error(err?.response?.data?.message || "Could not delete message");
+            }
+        } else if (deleteType === "everyone") {
+            // 1. Optimistic tombstone update for everyone (0ms perceived latency)
+            setMessages((prev) =>
+                prev.map((m) =>
+                    m._id === messageId
+                        ? { ...m, isDeletedForEveryone: true, message: "", attachments: [] }
+                        : m
+                )
+            );
+
+            setUsers((prev) =>
+                prev.map((u) => {
+                    if (u._id === selectedUser._id && u.lastMessage?._id === messageId) {
+                        return {
+                            ...u,
+                            lastMessage: {
+                                ...u.lastMessage,
+                                isDeletedForEveryone: true,
+                                message: "",
+                                attachments: []
+                            }
+                        };
+                    }
+                    return u;
+                })
+            );
+
+            try {
+                await deleteForEveryoneApi(messageId);
+                toast.success("Message deleted for everyone");
+            } catch (err) {
+                console.error("Failed to delete message for everyone:", err);
+                setMessages(previousMessages);
+                toast.error(err?.response?.data?.message || "Could not delete message for everyone");
+            }
+        }
+    };
+
     // Listen for Incoming Messages, Read Receipts & Live Typing in real-time
     useEffect(() => {
         if (!socket) return;
@@ -671,6 +735,36 @@ function HomePage() {
             );
         };
 
+        // Real-time message deletion sync (Phase 12)
+        const handleMessageDeleted = ({ messageId, deleteType }) => {
+            if (deleteType === "everyone") {
+                setMessages((prevMessages) =>
+                    prevMessages.map((msg) =>
+                        msg._id === messageId
+                            ? { ...msg, isDeletedForEveryone: true, message: "", attachments: [] }
+                            : msg
+                    )
+                );
+
+                setUsers((prevUsers) =>
+                    prevUsers.map((u) => {
+                        if (u.lastMessage?._id === messageId) {
+                            return {
+                                ...u,
+                                lastMessage: {
+                                    ...u.lastMessage,
+                                    isDeletedForEveryone: true,
+                                    message: "",
+                                    attachments: []
+                                }
+                            };
+                        }
+                        return u;
+                    })
+                );
+            }
+        };
+
         socket.on("newMessage", handleNewMessage);
         socket.on("userTyping", handleUserTyping);
         socket.on("userStoppedTyping", handleUserStoppedTyping);
@@ -678,6 +772,7 @@ function HomePage() {
         socket.on("userStatusUpdate", handleUserStatusUpdate);
         socket.on("messageDelivered", handleMessageDelievered);
         socket.on("messageReactionUpdated", handleMessageReactionUpdated);
+        socket.on("messageDeleted", handleMessageDeleted);
 
         return () => {
             socket.off("newMessage", handleNewMessage);
@@ -687,6 +782,7 @@ function HomePage() {
             socket.off("userStatusUpdate", handleUserStatusUpdate);
             socket.off("messageDelivered", handleMessageDelievered);
             socket.off("messageReactionUpdated", handleMessageReactionUpdated);
+            socket.off("messageDeleted", handleMessageDeleted);
         };
     }, [socket, selectedUser, user?._id]);
 
@@ -732,6 +828,7 @@ function HomePage() {
                             onSendMessage={handleSendMessage}
                             onSendAudio={handleSendAudio}
                             onToggleReaction={handleToggleReaction}
+                            onDeleteMessage={handleDeleteMessage}
                             onBack={handleBackToSidebar}
                             selectedFiles={selectedFiles}
                             onFilesSelect={(newFiles) => {

@@ -178,7 +178,7 @@ const getMessage = expressAsyncHandler(async (req, res, next) => {
     if (!conversation) {
         return new ApiResponse(200, true, "No conversation found", []).send(res);
     }
-    const messages = await messageModel.find({ conversationId: conversation._id }).sort({ createdAt: 1 });
+    const messages = await messageModel.find({ conversationId: conversation._id, deletedFor: { $ne: senderId } }).sort({ createdAt: 1 });
 
     // 1. Mark unread messages sent to me as 'read'
     await messageModel.updateMany({ conversationId: conversation._id, receiverId: senderId, status: { $ne: "read" } }, { status: "read" });
@@ -267,4 +267,101 @@ const toggleReaction = expressAsyncHandler(async (req, res) => {
     }).send(res);
 });
 
-export { sendMessage, getMessage, getUploadUrl, abortUpload, toggleReaction };
+//! Message Deletion Controller (Phase/Features 12)
+// & Controller 1: Delete For Me
+const deleteForMe = expressAsyncHandler(async (req, res) => {
+    const { id: messageId } = req.params;
+    const userId = req.user._id;
+    // Atomic update: $addToSet guarantees no duplicates and zero race conditions
+    const updatedMessage = await messageModel.findByIdAndUpdate(messageId, {
+        $addToSet: { deletedFor: userId }
+    },
+        { new: true }
+    );
+    if (!updatedMessage) {
+        throw new ErrorHandler(404, "Message not found");
+    }
+    new ApiResponse(200, true, "Message deleted for you", {
+        messageId,
+        deletedType: "me"
+    }).send(res);
+});
+
+const deleteForEveryone = expressAsyncHandler(async (req, res) => {
+    const { id: messageId } = req.params;
+    const userId = req.user._id;
+
+    // 1. Fetch message to validate sender & time-window
+    const existingMessage = await messageModel.findById(messageId);
+    if (!existingMessage) {
+        throw new ErrorHandler(404, "Message not found");
+    };
+    // Authorization: Only sender can delete for everyone
+    if (existingMessage.senderId.toString() !== userId.toString()) {
+        throw new ErrorHandler(403, "You can only delete your own messages for everyone");
+    }
+    // Time window: 48 hours
+    const messageAgeHours = (Date.now() - new Date(existingMessage.createdAt).getTime()) / (1000 * 60 * 60);
+    if (messageAgeHours > 48) {
+        throw new ErrorHandler(400, "Messages older than 48 hours cannot be deleted for everyone")
+    }
+    // Guard: If already deleted, return early
+    if (existingMessage.isDeletedForEveryone) {
+        return new ApiResponse(200, true, "Message already deleted", { messageId }).send(res);
+    }
+
+    // 2. OCI FIRST: Physically delete attachments from Oracle Cloud
+    if (Array.isArray(existingMessage.attachments) && existingMessage.attachments.length > 0) {
+        const keysToDelete = existingMessage.attachments.map((att) => {
+            if (!att.fileUrl) return null;
+            const parts = att.fileUrl.split("/o/");
+            return parts[1] ? decodeURIComponent(parts[1]) : null;
+        }).filter(Boolean);
+
+        if (keysToDelete.length > 0) {
+            // If OCI fails, this throws ErrorHandler and DB is NOT touched!
+            await deleteObjectsFromOCI(keysToDelete);
+        }
+    }
+
+    // 3. DATABASE SECOND: Atomic CAS (Compare-And-Swap)
+    // Guarantees only one concurrent request can flip isDeletedForEveryone to true
+    const tombstonedMessage = await messageModel.findOneAndUpdate(
+        {
+            _id: messageId,
+            senderId: userId,
+            isDeletedForEveryone: false // 👈 Atomic lock!
+        },
+        {
+            $set: {
+                isDeletedForEveryone: true,
+                message: "", // Wipe sensitive text
+                attachments: [] // Wipe attachments from DB
+            }
+        },
+        { new: true }
+    )
+    if (!tombstonedMessage) {
+        return new ApiResponse(200, true, "Message already deleted", { messageId }).send(res);
+    }
+
+    // 4. Real-time broadcast to the receiver via Socket.IO
+    const receiverId = tombstonedMessage.receiverId.toString() === userId.toString()
+        ? tombstonedMessage.senderId
+        : tombstonedMessage.receiverId;
+    const receiverSocketIds = getReceiverSocketIds(receiverId);
+    receiverSocketIds.forEach((sId) => {
+        io.to(sId).emit("messageDeleted", {
+            messageId: tombstonedMessage._id,
+            conversationId: tombstonedMessage.conversationId,
+            deleteType: "everyone"
+        });
+    });
+    new ApiResponse(200, true, "Message deleted for everyone", {
+        messageId: tombstonedMessage._id,
+        conversationId: tombstonedMessage.conversationId,
+        deleteType: "everyone"
+    }).send(res);
+});
+
+export { sendMessage, getMessage, getUploadUrl, abortUpload, toggleReaction, deleteForMe, deleteForEveryone };

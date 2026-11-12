@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, LogOut, MessageSquare, Users, Sun, Moon, Image as ImageIcon, FileText, Mic, FolderOpen } from 'lucide-react';
+import { Search, LogOut, MessageSquare, Users, Sun, Moon, Image as ImageIcon, FileText, Mic, FolderOpen, Ban } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
 const Sidebar = ({
@@ -180,43 +180,52 @@ const Sidebar = ({
                         </span>
                       ) : contact.lastMessage ? (
                         <>
-                          {contact.lastMessage.senderId === currentUser?._id && (
-                            <span className="text-slate-400 dark:text-slate-500 font-normal shrink-0">You: </span>
-                          )}
-
-                          {/* Media Type Badges */}
-                          {contact.lastMessage.messageType === 'mixed' || (contact.lastMessage.attachments?.some(a => a.mimeType?.startsWith('image/')) && contact.lastMessage.attachments?.some(a => !a.mimeType?.startsWith('image/'))) ? (
-                            <span className="inline-flex items-center gap-1 text-violet-600 dark:text-violet-400 truncate">
-                              <FolderOpen size={13} className="shrink-0" />
-                              <span className="truncate">
-                                {contact.lastMessage.message || `${contact.lastMessage.attachments?.length || 0} Files`}
-                              </span>
-                            </span>
-                          ) : contact.lastMessage.messageType === 'image' || contact.lastMessage.attachments?.some(a => a.mimeType?.startsWith('image/')) ? (
-                            <span className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 truncate">
-                              <ImageIcon size={13} className="shrink-0" />
-                              <span className="truncate">
-                                {contact.lastMessage.message || (
-                                  (contact.lastMessage.attachments?.filter(a => a.mimeType?.startsWith('image/')).length || 1) > 1
-                                    ? `${contact.lastMessage.attachments.filter(a => a.mimeType?.startsWith('image/')).length} Photos`
-                                    : 'Photo'
-                                )}
-                              </span>
-                            </span>
-                          ) : contact.lastMessage.messageType === 'audio' || contact.lastMessage.attachments?.some(a => a.mimeType?.startsWith('audio/')) ? (
-                            <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 truncate">
-                              <Mic size={13} className="shrink-0" />
-                              <span className="truncate">Voice note</span>
-                            </span>
-                          ) : contact.lastMessage.messageType === 'document' || contact.lastMessage.attachments?.some(a => !a.mimeType?.startsWith('image/') && !a.mimeType?.startsWith('audio/')) ? (
-                            <span className="inline-flex items-center gap-1 text-slate-700 dark:text-slate-300 truncate">
-                              <FileText size={13} className="shrink-0" />
-                              <span className="truncate">
-                                {contact.lastMessage.message || contact.lastMessage.attachments?.[0]?.fileName || 'Document'}
-                              </span>
+                          {contact.lastMessage.isDeletedForEveryone ? (
+                            <span className="inline-flex items-center gap-1 text-slate-400 dark:text-slate-500 italic truncate">
+                              <Ban size={12} className="shrink-0 opacity-70" />
+                              <span className="truncate">This message was deleted</span>
                             </span>
                           ) : (
-                            <span className="truncate">{contact.lastMessage.message}</span>
+                            <>
+                              {contact.lastMessage.senderId === currentUser?._id && (
+                                <span className="text-slate-400 dark:text-slate-500 font-normal shrink-0">You: </span>
+                              )}
+
+                              {/* Media Type Badges */}
+                              {contact.lastMessage.messageType === 'mixed' || (contact.lastMessage.attachments?.some(a => a.mimeType?.startsWith('image/')) && contact.lastMessage.attachments?.some(a => !a.mimeType?.startsWith('image/'))) ? (
+                                <span className="inline-flex items-center gap-1 text-violet-600 dark:text-violet-400 truncate">
+                                  <FolderOpen size={13} className="shrink-0" />
+                                  <span className="truncate">
+                                    {contact.lastMessage.message || `${contact.lastMessage.attachments?.length || 0} Files`}
+                                  </span>
+                                </span>
+                              ) : contact.lastMessage.messageType === 'image' || contact.lastMessage.attachments?.some(a => a.mimeType?.startsWith('image/')) ? (
+                                <span className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 truncate">
+                                  <ImageIcon size={13} className="shrink-0" />
+                                  <span className="truncate">
+                                    {contact.lastMessage.message || (
+                                      (contact.lastMessage.attachments?.filter(a => a.mimeType?.startsWith('image/')).length || 1) > 1
+                                        ? `${contact.lastMessage.attachments.filter(a => a.mimeType?.startsWith('image/')).length} Photos`
+                                        : 'Photo'
+                                    )}
+                                  </span>
+                                </span>
+                              ) : contact.lastMessage.messageType === 'audio' || contact.lastMessage.attachments?.some(a => a.mimeType?.startsWith('audio/')) ? (
+                                <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 truncate">
+                                  <Mic size={13} className="shrink-0" />
+                                  <span className="truncate">Voice note</span>
+                                </span>
+                              ) : contact.lastMessage.messageType === 'document' || contact.lastMessage.attachments?.some(a => !a.mimeType?.startsWith('image/') && !a.mimeType?.startsWith('audio/')) ? (
+                                <span className="inline-flex items-center gap-1 text-slate-700 dark:text-slate-300 truncate">
+                                  <FileText size={13} className="shrink-0" />
+                                  <span className="truncate">
+                                    {contact.lastMessage.message || contact.lastMessage.attachments?.[0]?.fileName || 'Document'}
+                                  </span>
+                                </span>
+                              ) : (
+                                <span className="truncate">{contact.lastMessage.message}</span>
+                              )}
+                            </>
                           )}
                         </>
                       ) : (

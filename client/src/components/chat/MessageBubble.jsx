@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, lazy, Suspense } from 'react';
-import { Check, CheckCheck, FileText, Download, Clock, AlertCircle, X, Smile, Plus, Loader2, Reply, Image as ImageIcon, Mic } from 'lucide-react';
+import { Check, CheckCheck, FileText, Download, Clock, AlertCircle, X, Smile, Plus, Loader2, Reply, Image as ImageIcon, Mic, Trash2, Ban } from 'lucide-react';
 import VoiceNotePlayer from './VoiceNotePlayer';
 
 // Lazy-loaded full emoji picker for custom reactions (WhatsApp-style '+' button)
@@ -18,10 +18,12 @@ const MessageBubble = ({
   reactions = [],
   replyTo = null,
   replySnapshot = null,
+  isDeletedForEveryone = false,
   isHighlighted = false,
   currentUserId = null,
   onToggleReaction = () => { },
   onSelectReply = () => { },
+  onDeleteClick = () => { },
   onJumpToMessage = () => { },
   uploadProgress = 0,
   onCancelUpload = () => { },
@@ -157,6 +159,40 @@ const MessageBubble = ({
 
   const hasReactions = Object.keys(reactionGroups).length > 0;
 
+  // 1. Tombstone View: Message Deleted for Everyone (Phase 12)
+  if (isDeletedForEveryone) {
+    return (
+      <div
+        id={messageId ? `msg-${messageId}` : undefined}
+        className={`relative group/msg flex w-full mb-2.5 transition-all duration-300 ${
+          isOutgoing ? 'justify-end' : 'justify-start'
+        }`}
+      >
+        <div
+          className={`relative max-w-[85%] sm:max-w-[70%] flex items-center gap-1.5 ${
+            isOutgoing ? 'flex-row' : 'flex-row-reverse'
+          }`}
+        >
+          <div
+            className={`rounded-2xl px-3.5 py-2 text-xs flex items-center gap-2 select-none shadow-xs border italic ${
+              isOutgoing
+                ? 'bg-indigo-950/40 border-indigo-500/30 text-indigo-200/90 rounded-br-xs'
+                : 'bg-slate-100/80 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/50 text-slate-500 dark:text-slate-400 rounded-bl-xs'
+            }`}
+          >
+            <Ban size={14} className="shrink-0 opacity-70" />
+            <span className="leading-tight">
+              {isOutgoing ? 'You deleted this message' : 'This message was deleted'}
+            </span>
+            <span className="text-[10px] not-italic opacity-60 ml-1 shrink-0">
+              {formatTime(createdAt)}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       id={messageId ? `msg-${messageId}` : undefined}
@@ -189,6 +225,14 @@ const MessageBubble = ({
               title="React to message"
             >
               <Smile size={15} />
+            </button>
+            <button
+              type="button"
+              onClick={onDeleteClick}
+              className="p-1.5 rounded-full text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all cursor-pointer shadow-xs active:scale-90"
+              title="Delete message"
+            >
+              <Trash2 size={15} />
             </button>
           </div>
         )}
@@ -236,6 +280,20 @@ const MessageBubble = ({
               title="More reactions"
             >
               <Plus size={16} />
+            </button>
+
+            {/* Mobile quick delete button */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowReactionDock(false);
+                onDeleteClick();
+              }}
+              className="w-7 h-7 flex items-center justify-center rounded-full text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all cursor-pointer hover:scale-115 active:scale-95"
+              title="Delete message"
+            >
+              <Trash2 size={15} />
             </button>
           </div>
         )}

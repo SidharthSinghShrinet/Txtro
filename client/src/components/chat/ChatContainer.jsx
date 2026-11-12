@@ -4,7 +4,7 @@ import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
 import DateSeparator from './DateSeparator';
 import { isSameDay } from '../../utils/date';
-import { MessageSquareDashed, UploadCloud, ChevronDown } from 'lucide-react';
+import { MessageSquareDashed, UploadCloud, ChevronDown, Trash2 } from 'lucide-react';
 
 // yet-another-react-lightbox + plugins & styles
 import Lightbox from "yet-another-react-lightbox";
@@ -36,9 +36,13 @@ const ChatContainer = ({
   replyingToMessage = null,
   onSelectReply = () => { },
   onCancelReply = () => { },
+  onDeleteMessage = () => { },
 }) => {
   const messagesEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
+
+  // Message Deletion Confirmation Modal State (Phase 12)
+  const [confirmDeleteMessage, setConfirmDeleteMessage] = useState(null);
 
   // Floating Scroll-to-Bottom & Unread Badging State
   const [showScrollBottom, setShowScrollBottom] = useState(false);
@@ -255,10 +259,12 @@ const ChatContainer = ({
                     reactions={msg.reactions || []}
                     replyTo={msg.replyTo}
                     replySnapshot={msg.replySnapshot}
+                    isDeletedForEveryone={msg.isDeletedForEveryone || false}
                     isHighlighted={highlightedMessageId === msg._id}
                     currentUserId={currentUser?._id}
                     onToggleReaction={onToggleReaction}
                     onSelectReply={() => onSelectReply(msg)}
+                    onDeleteClick={() => setConfirmDeleteMessage(msg)}
                     onJumpToMessage={handleJumpToMessage}
                     uploadProgress={uploadProgress}
                     onCancelUpload={onCancelUpload}
@@ -333,6 +339,73 @@ const ChatContainer = ({
         carousel={{ finite: true }}
         thumbnails={{ position: 'bottom', width: 80, height: 60 }}
       />
+
+      {/* WhatsApp-Style Delete Confirmation Modal (Phase 12) */}
+      {confirmDeleteMessage && (() => {
+        const isSender = confirmDeleteMessage.senderId === currentUser?._id;
+        const messageAgeHours = (Date.now() - new Date(confirmDeleteMessage.createdAt).getTime()) / (1000 * 60 * 60);
+        const canDeleteForEveryone = isSender && messageAgeHours <= 48;
+
+        return (
+          <div
+            onClick={() => setConfirmDeleteMessage(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 animate-in zoom-in-95 duration-150"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-2xl bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
+                  <Trash2 size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">Delete message?</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    {canDeleteForEveryone
+                      ? "Delete this message for everyone or only for yourself?"
+                      : "Delete this message for yourself? Other chat members will still see it."}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 mt-5">
+                {canDeleteForEveryone && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onDeleteMessage(confirmDeleteMessage._id, "everyone");
+                      setConfirmDeleteMessage(null);
+                    }}
+                    className="w-full py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold transition-all cursor-pointer shadow-xs active:scale-[0.98]"
+                  >
+                    Delete for everyone
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    onDeleteMessage(confirmDeleteMessage._id, "me");
+                    setConfirmDeleteMessage(null);
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-all cursor-pointer active:scale-[0.98]"
+                >
+                  Delete for me
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setConfirmDeleteMessage(null)}
+                  className="w-full py-2 px-4 rounded-xl text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 text-xs font-medium transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };
