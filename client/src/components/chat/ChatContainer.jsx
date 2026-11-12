@@ -36,6 +36,9 @@ const ChatContainer = ({
   replyingToMessage = null,
   onSelectReply = () => { },
   onCancelReply = () => { },
+  editingMessage = null,
+  onStartEdit = () => { },
+  onCancelEdit = () => { },
   onDeleteMessage = () => { },
 }) => {
   const messagesEndRef = useRef(null);
@@ -260,11 +263,13 @@ const ChatContainer = ({
                     replyTo={msg.replyTo}
                     replySnapshot={msg.replySnapshot}
                     isDeletedForEveryone={msg.isDeletedForEveryone || false}
+                    isEdited={msg.isEdited || false}
                     isHighlighted={highlightedMessageId === msg._id}
                     currentUserId={currentUser?._id}
                     onToggleReaction={onToggleReaction}
                     onSelectReply={() => onSelectReply(msg)}
                     onDeleteClick={() => setConfirmDeleteMessage(msg)}
+                    onEditClick={() => onStartEdit(msg)}
                     onJumpToMessage={handleJumpToMessage}
                     uploadProgress={uploadProgress}
                     onCancelUpload={onCancelUpload}
@@ -295,11 +300,10 @@ const ChatContainer = ({
           onClick={() => scrollToBottom('smooth')}
           title="Scroll to bottom"
           aria-label="Scroll to bottom"
-          className={`absolute right-4 sm:right-6 bottom-4 z-20 w-10 h-10 rounded-full flex items-center justify-center bg-white/95 dark:bg-slate-800/95 text-slate-700 dark:text-slate-200 border border-slate-200/90 dark:border-slate-700/80 shadow-md shadow-slate-900/10 dark:shadow-slate-950/40 backdrop-blur-md cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/90 hover:scale-105 active:scale-95 transition-all duration-300 ease-out ${
-            showScrollBottom
+          className={`absolute right-4 sm:right-6 bottom-4 z-20 w-10 h-10 rounded-full flex items-center justify-center bg-white/95 dark:bg-slate-800/95 text-slate-700 dark:text-slate-200 border border-slate-200/90 dark:border-slate-700/80 shadow-md shadow-slate-900/10 dark:shadow-slate-950/40 backdrop-blur-md cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/90 hover:scale-105 active:scale-95 transition-all duration-300 ease-out ${showScrollBottom
               ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto'
               : 'opacity-0 translate-y-3 scale-90 pointer-events-none'
-          }`}
+            }`}
         >
           <ChevronDown size={20} className="stroke-[2.2]" />
           {newMessagesCount > 0 && (
@@ -325,6 +329,8 @@ const ChatContainer = ({
         uploadProgress={uploadProgress}
         replyingTo={replyingToMessage}
         onCancelReply={onCancelReply}
+        editingMessage={editingMessage}
+        onCancelEdit={onCancelEdit}
         currentUserId={currentUser?._id}
       />
 

@@ -1,5 +1,5 @@
 import Router from "express";
-import { abortUpload, getMessage, getUploadUrl, sendMessage, toggleReaction, deleteForMe, deleteForEveryone } from "../controllers/message.controller.js";
+import { abortUpload, getMessage, getUploadUrl, sendMessage, toggleReaction, deleteForMe, deleteForEveryone, editMessage } from "../controllers/message.controller.js";
 import authenticate from "../middlewares/auth.middleware.js";
 const router = Router();
 
@@ -27,6 +27,12 @@ router.delete("/delete-for-me/:id", authenticate, deleteForMe);
 //& @route   DELETE /api/v1/messages/delete-for-everyone/:id
 //& @access  Private
 router.delete("/delete-for-everyone/:id", authenticate, deleteForEveryone);
+
+//& @desc    Edit a message
+//& @route   PATCH /api/v1/messages/edit/:id
+//& @access  Private
+//& id -> Receiver Id
+router.patch("/edit/:id", authenticate, editMessage);
 
 //& @desc    Send a message
 //& @route   POST /api/v1/messages/send/:id

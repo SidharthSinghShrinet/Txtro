@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, lazy, Suspense } from 'react';
-import { Send, Paperclip, Smile, X, FileText, Loader2, Mic, Trash2, Pause, Play, Reply, Image as ImageIcon } from 'lucide-react';
+import { Send, Paperclip, Smile, X, FileText, Loader2, Mic, Trash2, Pause, Play, Reply, Image as ImageIcon, Pencil, Check } from 'lucide-react';
 import { useAudioRecorder, formatAudioDuration } from '../../hooks/useAudioRecorder';
 
 // Lazy-loaded Emoji Picker (0 KB initial bundle footprint + hover prefetch)
@@ -23,6 +23,8 @@ const MessageInput = ({
   uploadProgress = 0,
   replyingTo = null,
   onCancelReply = () => { },
+  editingMessage = null,
+  onCancelEdit = () => { },
   currentUserId = null,
 }) => {
   const fileInputRef = useRef(null);
@@ -88,6 +90,15 @@ const MessageInput = ({
       textInputRef.current?.focus();
     }
   }, [replyingTo]);
+
+  // Auto-focus input & position cursor at end when editing a message (Phase 13)
+  useEffect(() => {
+    if (editingMessage && textInputRef.current) {
+      textInputRef.current.focus();
+      const len = textInputRef.current.value?.length || 0;
+      textInputRef.current.setSelectionRange(len, len);
+    }
+  }, [editingMessage]);
 
   // Insert emoji at cursor position
   const handleEmojiSelect = (emojiData) => {
@@ -197,10 +208,17 @@ const MessageInput = ({
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Escape' && replyingTo) {
-      e.preventDefault();
-      onCancelReply();
-      return;
+    if (e.key === 'Escape') {
+      if (editingMessage) {
+        e.preventDefault();
+        onCancelEdit();
+        return;
+      }
+      if (replyingTo) {
+        e.preventDefault();
+        onCancelReply();
+        return;
+      }
     }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -259,6 +277,32 @@ const MessageInput = ({
               previewConfig={{ showPreview: false }}
             />
           </Suspense>
+        </div>
+      )}
+      {/* Floating Edit Message Mode Banner (Phase 13) */}
+      {editingMessage && (
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-indigo-50/90 dark:bg-indigo-950/70 border-b border-indigo-200/80 dark:border-indigo-800/60 text-xs animate-in slide-in-from-bottom-2 duration-150 backdrop-blur-md">
+          <div className="flex items-center gap-2.5 min-w-0 border-l-3 border-indigo-600 dark:border-indigo-400 pl-2.5">
+            <div className="w-6 h-6 rounded-lg bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+              <Pencil size={13} />
+            </div>
+            <div className="min-w-0">
+              <div className="font-bold text-indigo-700 dark:text-indigo-300 text-xs">
+                Editing message
+              </div>
+              <div className="text-slate-600 dark:text-slate-300 truncate mt-0.5 max-w-xs sm:max-w-md">
+                {editingMessage.message}
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onCancelEdit}
+            className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+            title="Cancel editing (Esc)"
+          >
+            <X size={15} />
+          </button>
         </div>
       )}
       {/* Floating Quoted Message Reply Dock (Phase 11) */}
@@ -543,16 +587,18 @@ const MessageInput = ({
 
             {/* Attachment & Emoji actions */}
             <div className="flex items-center text-slate-400">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={disabled || isUploading}
-                className="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60 transition-colors cursor-pointer disabled:opacity-50"
-                title="Attach files"
-                tabIndex={-1}
-              >
-                <Paperclip size={18} />
-              </button>
+              {!editingMessage && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={disabled || isUploading}
+                  className="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60 transition-colors cursor-pointer disabled:opacity-50"
+                  title="Attach files"
+                  tabIndex={-1}
+                >
+                  <Paperclip size={18} />
+                </button>
+              )}
               <button
                 ref={emojiButtonRef}
                 type="button"
@@ -580,7 +626,13 @@ const MessageInput = ({
                 onChange={onChange}
                 onKeyDown={handleKeyDown}
                 disabled={disabled || isUploading}
-                placeholder={selectedFiles.length > 0 ? 'Add a caption...' : placeholder}
+                placeholder={
+                  editingMessage
+                    ? 'Edit your message...'
+                    : selectedFiles.length > 0
+                    ? 'Add a caption...'
+                    : placeholder
+                }
                 className="w-full h-11 px-4 text-sm font-medium text-slate-800 dark:text-slate-100 bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-2xl outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 transition-all disabled:opacity-50"
               />
             </div>
@@ -591,10 +643,12 @@ const MessageInput = ({
                 type="submit"
                 disabled={disabled || isUploading}
                 className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-500 text-white flex items-center justify-center shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/40 hover:brightness-110 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all cursor-pointer shrink-0"
-                title="Send message"
+                title={editingMessage ? 'Save changes' : 'Send message'}
               >
                 {isUploading ? (
                   <Loader2 size={18} className="animate-spin text-white" />
+                ) : editingMessage ? (
+                  <Check size={18} strokeWidth={2.5} />
                 ) : (
                   <Send size={18} />
                 )}

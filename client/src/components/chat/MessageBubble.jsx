@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, lazy, Suspense } from 'react';
-import { Check, CheckCheck, FileText, Download, Clock, AlertCircle, X, Smile, Plus, Loader2, Reply, Image as ImageIcon, Mic, Trash2, Ban } from 'lucide-react';
+import { Check, CheckCheck, FileText, Download, Clock, AlertCircle, X, Smile, Plus, Loader2, Reply, Image as ImageIcon, Mic, Trash2, Ban, Pencil } from 'lucide-react';
 import VoiceNotePlayer from './VoiceNotePlayer';
 
 // Lazy-loaded full emoji picker for custom reactions (WhatsApp-style '+' button)
@@ -19,11 +19,13 @@ const MessageBubble = ({
   replyTo = null,
   replySnapshot = null,
   isDeletedForEveryone = false,
+  isEdited = false,
   isHighlighted = false,
   currentUserId = null,
   onToggleReaction = () => { },
   onSelectReply = () => { },
   onDeleteClick = () => { },
+  onEditClick = () => { },
   onJumpToMessage = () => { },
   uploadProgress = 0,
   onCancelUpload = () => { },
@@ -40,6 +42,9 @@ const MessageBubble = ({
   const [isSwiping, setIsSwiping] = useState(false);
 
   // Group reactions by emoji (e.g. { "❤️": { count: 2, hasUserReacted: true } })
+  const messageAgeMinutes = (Date.now() - new Date(createdAt).getTime()) / (1000 * 60);
+  const canEdit = isOutgoing && messageType === 'text' && !isDeletedForEveryone && messageAgeMinutes <= 15 && status !== 'sending' && status !== 'failed';
+
   const reactionGroups = useMemo(() => {
     if (!Array.isArray(reactions) || reactions.length === 0) return {};
     return reactions.reduce((acc, curr) => {
@@ -164,21 +169,18 @@ const MessageBubble = ({
     return (
       <div
         id={messageId ? `msg-${messageId}` : undefined}
-        className={`relative group/msg flex w-full mb-2.5 transition-all duration-300 ${
-          isOutgoing ? 'justify-end' : 'justify-start'
-        }`}
+        className={`relative group/msg flex w-full mb-2.5 transition-all duration-300 ${isOutgoing ? 'justify-end' : 'justify-start'
+          }`}
       >
         <div
-          className={`relative max-w-[85%] sm:max-w-[70%] flex items-center gap-1.5 ${
-            isOutgoing ? 'flex-row' : 'flex-row-reverse'
-          }`}
+          className={`relative max-w-[85%] sm:max-w-[70%] flex items-center gap-1.5 ${isOutgoing ? 'flex-row' : 'flex-row-reverse'
+            }`}
         >
           <div
-            className={`rounded-2xl px-3.5 py-2 text-xs flex items-center gap-2 select-none shadow-xs border italic ${
-              isOutgoing
-                ? 'bg-indigo-950/40 border-indigo-500/30 text-indigo-200/90 rounded-br-xs'
-                : 'bg-slate-100/80 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/50 text-slate-500 dark:text-slate-400 rounded-bl-xs'
-            }`}
+            className={`rounded-2xl px-3.5 py-2 text-xs flex items-center gap-2 select-none shadow-xs border italic ${isOutgoing
+              ? 'bg-indigo-950/40 border-indigo-500/30 text-indigo-200/90 rounded-br-xs'
+              : 'bg-slate-100/80 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/50 text-slate-500 dark:text-slate-400 rounded-bl-xs'
+              }`}
           >
             <Ban size={14} className="shrink-0 opacity-70" />
             <span className="leading-tight">
@@ -226,6 +228,16 @@ const MessageBubble = ({
             >
               <Smile size={15} />
             </button>
+            {canEdit && (
+              <button
+                type="button"
+                onClick={onEditClick}
+                className="p-1.5 rounded-full text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-all cursor-pointer shadow-xs active:scale-90"
+                title="Edit message"
+              >
+                <Pencil size={15} />
+              </button>
+            )}
             <button
               type="button"
               onClick={onDeleteClick}
@@ -281,6 +293,22 @@ const MessageBubble = ({
             >
               <Plus size={16} />
             </button>
+
+            {/* Mobile quick edit button */}
+            {canEdit && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowReactionDock(false);
+                  onEditClick();
+                }}
+                className="w-7 h-7 flex items-center justify-center rounded-full text-slate-500 hover:text-indigo-500 dark:text-slate-400 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-all cursor-pointer hover:scale-115 active:scale-95"
+                title="Edit message"
+              >
+                <Pencil size={14} />
+              </button>
+            )}
 
             {/* Mobile quick delete button */}
             <button
@@ -578,6 +606,11 @@ const MessageBubble = ({
               : 'mt-1'
               } ${isOutgoing ? 'text-indigo-200/80' : 'text-slate-400 dark:text-slate-400'}`}
           >
+            {isEdited && (
+              <span className="italic opacity-75 text-[9.5px] font-normal mr-0.5 select-none">
+                edited
+              </span>
+            )}
             <span>{formatTime(createdAt)}</span>
 
             {isOutgoing && (

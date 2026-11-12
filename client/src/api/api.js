@@ -46,3 +46,8 @@ export const deleteForMeApi = (messageId) => {
 export const deleteForEveryoneApi = (messageId) => {
     return apiInstance.delete(`/messages/delete-for-everyone/${messageId}`);
 }
+
+export const editMessageApi = (messageId, message) => {
+    return apiInstance.patch(`/messages/edit/${messageId}`, { message });
+}
+

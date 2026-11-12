@@ -119,6 +119,14 @@ const messageSchema = new mongoose.Schema({
     isDeletedForEveryone: {
         type: Boolean,
         default: false
+    },
+    isEdited: {
+        type: Boolean,
+        default: false
+    },
+    editedAt: {
+        type: Date,
+        default: null
     }
 }, {
     timestamps: true

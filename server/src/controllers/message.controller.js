@@ -7,6 +7,7 @@ import { getReceiverSocketIds, io } from "../socket/socket.js";
 import { deleteObjectsFromOCI, generatePreSignedUploadUrl } from "../utils/ociStorage.util.js";
 import { text } from "express";
 import uploadIntentModel from "../models/uploadIntent.model.js";
+import { error } from "console";
 
 
 const getUploadUrl = expressAsyncHandler(async (req, res) => {
@@ -364,4 +365,82 @@ const deleteForEveryone = expressAsyncHandler(async (req, res) => {
     }).send(res);
 });
 
-export { sendMessage, getMessage, getUploadUrl, abortUpload, toggleReaction, deleteForMe, deleteForEveryone };
+//! Message Edit Controller (Phase/Features 13)
+//! We are following the way: (The Fast-Path + Diagnostic Fallback Pattern (Tier-1))
+//! We opted this way because to avoid the race condition and to do the operation in single database query only.
+const editMessage = expressAsyncHandler(async (req, res) => {
+    const { id: messageId } = req.params;
+    const userId = req.user._id;
+    const { message: newText } = req.body;
+
+    // 1. Fast application-level check (No DB hit)
+    if (!newText || typeof newText !== "string" || !newText.trim()) {
+        throw new ErrorHandler(400, "Message content is required and cannot be empty");
+    }
+
+    const editedAt = new Date();
+    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+
+    // 2. FAST PATH: Attempt the atomic update in ONE database roundtrip!
+    const updatedMessage = await messageModel.findOneAndUpdate(
+        {
+            _id: messageId,
+            senderId: userId,
+            messageType: "text",
+            isDeletedForEveryone: false,
+            createdAt: { $gte: fifteenMinutesAgo }
+        },
+        {
+            $set: {
+                message: newText.trim(),
+                isEdited: true,
+                editedAt: editedAt,
+            }
+        },
+        { new: true }
+    );
+
+    // 3. 99.9% Happy Path: Done in 1 DB trip!
+    if (updatedMessage) {
+        // Broadcast via Socket.IO
+        const receiverId = updatedMessage.receiverId.toString() === userId.toString()
+            ? updatedMessage.senderId
+            : updatedMessage.receiverId;
+        const receiverSocketIds = getReceiverSocketIds(receiverId);
+        receiverSocketIds.forEach((sId) => {
+            io.to(sId).emit("messageEdited", {
+                messageId: updatedMessage._id,
+                conversationId: updatedMessage.conversationId,
+                message: updatedMessage.message,
+                isEdited: updatedMessage.isEdited,
+                editedAt: updatedMessage.editedAt
+            });
+        });
+        return new ApiResponse(200, true, "Message edited successfully", updatedMessage).send(res);
+    }
+
+    // 4. DIAGNOSTIC FALLBACK: Only reached if the atomic filter failed (0.1% edge case)
+    // Run a single read query to diagnose EXACTLY which guard caused the failure:
+    const msg = await messageModel.findById(messageId).select(
+        "senderId messageType isDeletedForEveryone createdAt"
+    );
+    if (!msg) {
+        throw new ErrorHandler(404, "Message not found");
+    }
+    if (msg.senderId.toString() !== userId.toString()) {
+        throw new ErrorHandler(403, "You can only edit your own messages");
+    }
+    if (msg.messageType !== "text") {
+        throw new ErrorHandler(400, "Only text messages can be edited");
+    }
+    if (msg.isDeletedForEveryone) {
+        throw new ErrorHandler(400, "Cannot edit a deleted message");
+    }
+    if (Date.now() - new Date(msg.createdAt).getTime() > 15 * 60 * 1000) {
+        throw new ErrorHandler(400, "Messages older than 15 minutes cannot be edited");
+    }
+    // Fallback safety (e.g. race condition resolved)
+    throw new ErrorHandler(409, "Message could not be edited due to a conflict");
+})
+
+export { sendMessage, getMessage, getUploadUrl, abortUpload, toggleReaction, deleteForMe, deleteForEveryone, editMessage };

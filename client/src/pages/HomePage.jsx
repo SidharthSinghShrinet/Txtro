@@ -5,7 +5,7 @@ import NoChatSelected from '../components/chat/NoChatSelected';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import toast from 'react-hot-toast';
-import { getAllUsersWithMetadataApi, getMessagesApi, sendMessageApi, toggleReactionApi, deleteForMeApi, deleteForEveryoneApi } from '../api/api';
+import { getAllUsersWithMetadataApi, getMessagesApi, sendMessageApi, toggleReactionApi, deleteForMeApi, deleteForEveryoneApi, editMessageApi } from '../api/api';
 import { useEffect } from 'react';
 import { uploadFilesDirectlyToCloud } from '../utils/fileUpload';
 import {
@@ -23,6 +23,9 @@ function HomePage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [messageInput, setMessageInput] = useState('');
     const [replyingToMessage, setReplyingToMessage] = useState(null);
+    const [editingMessage, setEditingMessage] = useState(null);
+    const editingMessageRef = useRef(null);
+    const draftBeforeEditRef = useRef('');
     const [isTyping, setIsTyping] = useState(false);
     const typingTimeoutRef = useRef(null);
     const [selectedFiles, setSelectedFiles] = useState([]);
@@ -107,7 +110,7 @@ function HomePage() {
     const handleSelectUser = (contact) => {
         // 1. Save active draft for previous contact before switching
         if (selectedUser && selectedUser._id !== contact?._id) {
-            const outgoingText = messageInput;
+            const outgoingText = editingMessageRef.current ? (draftBeforeEditRef.current || "") : messageInput;
             const outgoingFiles = selectedFiles;
             saveDraftToStorage(selectedUser._id, outgoingText, outgoingFiles);
             setDraftsMap((prev) => {
@@ -126,6 +129,9 @@ function HomePage() {
 
         setSelectedUser(contact);
         setReplyingToMessage(null);
+        setEditingMessage(null);
+        editingMessageRef.current = null;
+        draftBeforeEditRef.current = '';
         setIsTyping(false);
         if (typingTimeoutRef.current) {
             clearTimeout(typingTimeoutRef.current);
@@ -155,7 +161,7 @@ function HomePage() {
     const handleBackToSidebar = () => {
         // Save current draft before going back on mobile
         if (selectedUser) {
-            const outgoingText = messageInput;
+            const outgoingText = editingMessageRef.current ? (draftBeforeEditRef.current || "") : messageInput;
             const outgoingFiles = selectedFiles;
             saveDraftToStorage(selectedUser._id, outgoingText, outgoingFiles);
             setDraftsMap((prev) => {
@@ -174,6 +180,9 @@ function HomePage() {
 
         setSelectedUser(null);
         setReplyingToMessage(null);
+        setEditingMessage(null);
+        editingMessageRef.current = null;
+        draftBeforeEditRef.current = '';
         setIsTyping(false);
         if (typingTimeoutRef.current) {
             clearTimeout(typingTimeoutRef.current);
@@ -186,7 +195,8 @@ function HomePage() {
         setMessageInput(value);
 
         // Auto-save draft to IndexedDB (debounced ~300ms)
-        if (selectedUser) {
+        // ⚠️ CRITICAL: Never overwrite/save draft while user is editing an existing message!
+        if (selectedUser && !editingMessageRef.current) {
             if (draftDebounceRef.current) clearTimeout(draftDebounceRef.current);
             draftDebounceRef.current = setTimeout(() => {
                 saveDraftToStorage(selectedUser._id, value, selectedFiles);
@@ -221,6 +231,44 @@ function HomePage() {
         }, 2000);
     };
 
+    const handleStartEdit = (msg) => {
+        if (!msg || msg.messageType !== "text") return;
+        if (draftDebounceRef.current) clearTimeout(draftDebounceRef.current);
+        draftBeforeEditRef.current = messageInput;
+        setEditingMessage(msg);
+        editingMessageRef.current = msg;
+        setMessageInput(msg.message || "");
+        setReplyingToMessage(null);
+    };
+
+    const handleCancelEdit = () => {
+        if (draftDebounceRef.current) clearTimeout(draftDebounceRef.current);
+        setEditingMessage(null);
+        editingMessageRef.current = null;
+        const restoredDraft = draftBeforeEditRef.current || "";
+        setMessageInput(restoredDraft);
+        draftBeforeEditRef.current = "";
+
+        // Synchronize draft state and IndexedDB with the restored draft
+        if (selectedUser) {
+            const hasDraft = Boolean(restoredDraft?.trim()) || selectedFiles.length > 0;
+            if (hasDraft) {
+                saveDraftToStorage(selectedUser._id, restoredDraft, selectedFiles);
+                setDraftsMap((prev) => ({
+                    ...prev,
+                    [selectedUser._id]: { text: restoredDraft, files: selectedFiles },
+                }));
+            } else {
+                deleteDraftFromStorage(selectedUser._id);
+                setDraftsMap((prev) => {
+                    const copy = { ...prev };
+                    delete copy[selectedUser._id];
+                    return copy;
+                });
+            }
+        }
+    };
+
     const handleSendMessage = async (e) => {
         e.preventDefault();
         if ((!messageInput.trim() && selectedFiles.length === 0) || !selectedUser) return;
@@ -231,6 +279,96 @@ function HomePage() {
         }
         if (socket && selectedUser) {
             socket.emit("stopTyping", { receiverId: selectedUser._id });
+        }
+
+        // Live Message Edit Flow (Phase 13)
+        if (editingMessage) {
+            if (draftDebounceRef.current) clearTimeout(draftDebounceRef.current);
+
+            const trimmed = messageInput.trim();
+            if (!trimmed) {
+                toast.error("Message content cannot be empty");
+                return;
+            }
+            const msgId = editingMessage._id;
+            const originalText = editingMessage.message;
+            const originalIsEdited = editingMessage.isEdited;
+            const originalEditedAt = editingMessage.editedAt;
+            const nowIso = new Date().toISOString();
+
+            // 1. Optimistic Update (0ms perceived latency)
+            setMessages((prev) =>
+                prev.map((m) =>
+                    m._id === msgId
+                        ? { ...m, message: trimmed, isEdited: true, editedAt: nowIso }
+                        : m
+                )
+            );
+            setUsers((prev) =>
+                prev.map((u) => {
+                    if (u._id === selectedUser._id && u.lastMessage?._id === msgId) {
+                        return {
+                            ...u,
+                            lastMessage: {
+                                ...u.lastMessage,
+                                message: trimmed,
+                                isEdited: true,
+                                editedAt: nowIso,
+                            },
+                        };
+                    }
+                    return u;
+                })
+            );
+
+            // Exit edit mode & restore prior draft
+            setEditingMessage(null);
+            editingMessageRef.current = null;
+            const restoredDraft = draftBeforeEditRef.current || "";
+            setMessageInput(restoredDraft);
+            draftBeforeEditRef.current = "";
+
+            // Synchronize draft state and IndexedDB with the restored draft
+            if (selectedUser) {
+                const hasDraft = Boolean(restoredDraft?.trim()) || selectedFiles.length > 0;
+                if (hasDraft) {
+                    saveDraftToStorage(selectedUser._id, restoredDraft, selectedFiles);
+                    setDraftsMap((prev) => ({
+                        ...prev,
+                        [selectedUser._id]: { text: restoredDraft, files: selectedFiles },
+                    }));
+                } else {
+                    deleteDraftFromStorage(selectedUser._id);
+                    setDraftsMap((prev) => {
+                        const copy = { ...prev };
+                        delete copy[selectedUser._id];
+                        return copy;
+                    });
+                }
+            }
+
+            try {
+                const res = await editMessageApi(msgId, trimmed);
+                if (res?.data?.data) {
+                    const confirmed = res.data.data;
+                    setMessages((prev) =>
+                        prev.map((m) => (m._id === msgId ? confirmed : m))
+                    );
+                }
+                toast.success("Message edited");
+            } catch (err) {
+                console.error("Failed to edit message:", err);
+                // Rollback optimistic update on error
+                setMessages((prev) =>
+                    prev.map((m) =>
+                        m._id === msgId
+                            ? { ...m, message: originalText, isEdited: originalIsEdited, editedAt: originalEditedAt }
+                            : m
+                    )
+                );
+                toast.error(err?.response?.data?.message || "Could not edit message");
+            }
+            return;
         }
 
         const currentText = messageInput.trim();
@@ -765,6 +903,34 @@ function HomePage() {
             }
         };
 
+        // Real-time message edit sync (Phase 13)
+        const handleMessageEdited = ({ messageId, conversationId, message: newText, isEdited, editedAt }) => {
+            setMessages((prevMessages) =>
+                prevMessages.map((msg) =>
+                    msg._id === messageId
+                        ? { ...msg, message: newText, isEdited, editedAt }
+                        : msg
+                )
+            );
+
+            setUsers((prevUsers) =>
+                prevUsers.map((u) => {
+                    if (u.lastMessage?._id === messageId) {
+                        return {
+                            ...u,
+                            lastMessage: {
+                                ...u.lastMessage,
+                                message: newText,
+                                isEdited,
+                                editedAt,
+                            },
+                        };
+                    }
+                    return u;
+                })
+            );
+        };
+
         socket.on("newMessage", handleNewMessage);
         socket.on("userTyping", handleUserTyping);
         socket.on("userStoppedTyping", handleUserStoppedTyping);
@@ -773,6 +939,7 @@ function HomePage() {
         socket.on("messageDelivered", handleMessageDelievered);
         socket.on("messageReactionUpdated", handleMessageReactionUpdated);
         socket.on("messageDeleted", handleMessageDeleted);
+        socket.on("messageEdited", handleMessageEdited);
 
         return () => {
             socket.off("newMessage", handleNewMessage);
@@ -783,6 +950,7 @@ function HomePage() {
             socket.off("messageDelivered", handleMessageDelievered);
             socket.off("messageReactionUpdated", handleMessageReactionUpdated);
             socket.off("messageDeleted", handleMessageDeleted);
+            socket.off("messageEdited", handleMessageEdited);
         };
     }, [socket, selectedUser, user?._id]);
 
@@ -872,6 +1040,9 @@ function HomePage() {
                             replyingToMessage={replyingToMessage}
                             onSelectReply={setReplyingToMessage}
                             onCancelReply={() => setReplyingToMessage(null)}
+                            editingMessage={editingMessage}
+                            onStartEdit={handleStartEdit}
+                            onCancelEdit={handleCancelEdit}
                             onCancelUpload={() => {
                                 if (abortUploadRef.current) {
                                     abortUploadRef.current();
