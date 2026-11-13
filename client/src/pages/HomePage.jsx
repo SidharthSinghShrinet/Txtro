@@ -269,7 +269,7 @@ function HomePage() {
         }
     };
 
-    const handleSendMessage = async (e) => {
+    const handleSendMessage = async (e, previewPayload = {}) => {
         e.preventDefault();
         if ((!messageInput.trim() && selectedFiles.length === 0) || !selectedUser) return;
 
@@ -430,6 +430,7 @@ function HomePage() {
                 fileUrl: currentReplyTo.attachments?.[0]?.fileUrl || null,
                 fileName: currentReplyTo.attachments?.[0]?.fileName || null,
             } : null,
+            linkPreview: previewPayload?.linkPreview || null,
             createdAt: new Date().toISOString(),
         };
 
@@ -475,7 +476,9 @@ function HomePage() {
                 message: currentText,
                 attachments: uploadedAttachments,
                 uploadIntentId,
-                replyTo: currentReplyTo?._id || null
+                replyTo: currentReplyTo?._id || null,
+                linkPreview: previewPayload?.linkPreview || null,
+                linkPreviewDismissed: Boolean(previewPayload?.linkPreviewDismissed)
             }, selectedUser._id);
 
             if (response?.status === 200 || response?.status === 201) {
@@ -903,12 +906,12 @@ function HomePage() {
             }
         };
 
-        // Real-time message edit sync (Phase 13)
-        const handleMessageEdited = ({ messageId, conversationId, message: newText, isEdited, editedAt }) => {
+        // Real-time message edit sync (Phase 13 & 14)
+        const handleMessageEdited = ({ messageId, conversationId, message: newText, isEdited, editedAt, linkPreview }) => {
             setMessages((prevMessages) =>
                 prevMessages.map((msg) =>
                     msg._id === messageId
-                        ? { ...msg, message: newText, isEdited, editedAt }
+                        ? { ...msg, message: newText, isEdited, editedAt, linkPreview: linkPreview !== undefined ? linkPreview : msg.linkPreview }
                         : msg
                 )
             );

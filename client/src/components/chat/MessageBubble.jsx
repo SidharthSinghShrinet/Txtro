@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, lazy, Suspense } from 'react';
-import { Check, CheckCheck, FileText, Download, Clock, AlertCircle, X, Smile, Plus, Loader2, Reply, Image as ImageIcon, Mic, Trash2, Ban, Pencil } from 'lucide-react';
+import { Check, CheckCheck, FileText, Download, Clock, AlertCircle, X, Smile, Plus, Loader2, Reply, Image as ImageIcon, Mic, Trash2, Ban, Pencil, ExternalLink } from 'lucide-react';
 import VoiceNotePlayer from './VoiceNotePlayer';
 
 // Lazy-loaded full emoji picker for custom reactions (WhatsApp-style '+' button)
@@ -20,6 +20,7 @@ const MessageBubble = ({
   replySnapshot = null,
   isDeletedForEveryone = false,
   isEdited = false,
+  linkPreview = null,
   isHighlighted = false,
   currentUserId = null,
   onToggleReaction = () => { },
@@ -163,6 +164,35 @@ const MessageBubble = ({
   );
 
   const hasReactions = Object.keys(reactionGroups).length > 0;
+
+  // Auto-linkify plain URLs in message text
+  const renderMessageContent = (text) => {
+    if (!text || typeof text !== 'string') return text;
+    const urlRegex = /(https?:\/\/[^\s]+)/gi;
+    const parts = text.split(urlRegex);
+    if (parts.length === 1) return text;
+
+    return parts.map((part, idx) => {
+      if (part.match(urlRegex)) {
+        return (
+          <a
+            key={idx}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className={`underline underline-offset-2 break-all ${isOutgoing
+              ? 'text-white hover:text-indigo-100 font-medium'
+              : 'text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium'
+              }`}
+          >
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
 
   // 1. Tombstone View: Message Deleted for Everyone (Phase 12)
   if (isDeletedForEveryone) {
@@ -587,6 +617,53 @@ const MessageBubble = ({
             </div>
           )}
 
+          {/* Rich Link Preview Card (Phase 14) */}
+          {linkPreview && linkPreview.url && (
+            <a
+              href={linkPreview.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className={`block my-2 rounded-xl overflow-hidden border transition-all duration-200 group/link ${isOutgoing
+                ? 'bg-black/15 hover:bg-black/25 border-white/20 text-white shadow-xs'
+                : 'bg-slate-50 dark:bg-slate-900/60 hover:bg-slate-100 dark:hover:bg-slate-900/90 border-slate-200 dark:border-slate-700/60 text-slate-800 dark:text-slate-100 shadow-xs'
+                }`}
+            >
+              {/* Hero Image / Thumbnail */}
+              {linkPreview.image && (
+                <div className="relative w-full aspect-video max-h-48 overflow-hidden bg-black/10 dark:bg-black/20">
+                  <img
+                    src={linkPreview.image}
+                    alt={linkPreview.title || 'Link thumbnail'}
+                    loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.parentElement.style.display = 'none';
+                    }}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover/link:scale-102"
+                  />
+                </div>
+              )}
+
+              {/* Card Meta Content */}
+              <div className="p-2.5">
+                {/* Title */}
+                {linkPreview.title && (
+                  <h4 className="font-bold text-xs leading-snug line-clamp-2 mb-1">
+                    {linkPreview.title}
+                  </h4>
+                )}
+
+                {/* Description */}
+                {linkPreview.description && (
+                  <p className="text-[11px] leading-relaxed opacity-80 line-clamp-2 mb-1.5">
+                    {linkPreview.description}
+                  </p>
+                )}
+
+              </div>
+            </a>
+          )}
+
           {/* Text Message / Optional Caption */}
           {message && (
             <p
@@ -595,7 +672,7 @@ const MessageBubble = ({
                 : ''
                 }`}
             >
-              {message}
+              {renderMessageContent(message)}
             </p>
           )}
 

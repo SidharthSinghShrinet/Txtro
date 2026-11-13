@@ -127,6 +127,29 @@ const messageSchema = new mongoose.Schema({
     editedAt: {
         type: Date,
         default: null
+    },
+    linkPreview: {
+        _id: false,
+        url: {
+            type: String,
+            default: null
+        },
+        title: {
+            type: String,
+            default: null,
+        },
+        description: {
+            type: String,
+            default: null
+        },
+        image: {
+            type: String,
+            default: null
+        },
+        siteName: {
+            type: String,
+            default: null
+        }
     }
 }, {
     timestamps: true

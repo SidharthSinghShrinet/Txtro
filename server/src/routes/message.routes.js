@@ -1,5 +1,5 @@
 import Router from "express";
-import { abortUpload, getMessage, getUploadUrl, sendMessage, toggleReaction, deleteForMe, deleteForEveryone, editMessage } from "../controllers/message.controller.js";
+import { abortUpload, getMessage, getUploadUrl, sendMessage, toggleReaction, deleteForMe, deleteForEveryone, editMessage, getLinkPreview } from "../controllers/message.controller.js";
 import authenticate from "../middlewares/auth.middleware.js";
 const router = Router();
 
@@ -39,6 +39,11 @@ router.patch("/edit/:id", authenticate, editMessage);
 //& @access  Private
 //& id -> Receiver Id
 router.post("/send/:id", authenticate, sendMessage);
+
+//& @desc    Get Link Preview
+//& @route   GET /api/v1/messages/link-preview
+//& @access  Private
+router.get("/link-preview", authenticate, getLinkPreview);
 
 //& @desc    Getting messages between two users
 //& @route   GET /api/v1/messages/:id

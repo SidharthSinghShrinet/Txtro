@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect, lazy, Suspense } from 'react';
-import { Send, Paperclip, Smile, X, FileText, Loader2, Mic, Trash2, Pause, Play, Reply, Image as ImageIcon, Pencil, Check } from 'lucide-react';
+import { Send, Paperclip, Smile, X, FileText, Loader2, Mic, Trash2, Pause, Play, Reply, Image as ImageIcon, Pencil, Check, Globe, ExternalLink } from 'lucide-react';
 import { useAudioRecorder, formatAudioDuration } from '../../hooks/useAudioRecorder';
+import { getLinkPreviewApi } from '../../api/api';
 
 // Lazy-loaded Emoji Picker (0 KB initial bundle footprint + hover prefetch)
 const EmojiPicker = lazy(() => import('emoji-picker-react'));
@@ -99,6 +100,71 @@ const MessageInput = ({
       textInputRef.current.setSelectionRange(len, len);
     }
   }, [editingMessage]);
+
+  // Auto-resize textarea height as content wraps or expands with Shift+Enter
+  useEffect(() => {
+    if (textInputRef.current) {
+      textInputRef.current.style.height = 'auto';
+      const scrollHeight = textInputRef.current.scrollHeight;
+      // Cap at 140px (~5 lines); hide scrollbar completely until it exceeds cap
+      if (scrollHeight > 140) {
+        textInputRef.current.style.height = '140px';
+        textInputRef.current.style.overflowY = 'auto';
+      } else {
+        textInputRef.current.style.height = `${Math.max(scrollHeight, 24)}px`;
+        textInputRef.current.style.overflowY = 'hidden';
+      }
+    }
+  }, [value]);
+
+  // Live Link Preview Pre-Flight State (Phase 14 - Pattern 2 WhatsApp Standard)
+  const [inputLinkPreview, setInputLinkPreview] = useState(null);
+  const [isLinkPreviewDismissed, setIsLinkPreviewDismissed] = useState(false);
+  const detectedUrlRef = useRef(null);
+  const previewDebounceRef = useRef(null);
+
+  // Live URL detection & debounced pre-flight link preview
+  useEffect(() => {
+    const urlMatch = value ? value.match(/https?:\/\/[^\s]+/i) : null;
+    const currentUrl = urlMatch ? urlMatch[0].replace(/[.,!?;:)]+$/, '') : null;
+
+    // If URL was removed from input, clear preview state
+    if (!currentUrl) {
+      setInputLinkPreview(null);
+      setIsLinkPreviewDismissed(false);
+      detectedUrlRef.current = null;
+      if (previewDebounceRef.current) clearTimeout(previewDebounceRef.current);
+      return;
+    }
+
+    // If URL changed to a different link, reset dismissal so new link can be previewed
+    if (detectedUrlRef.current !== currentUrl) {
+      detectedUrlRef.current = currentUrl;
+      setIsLinkPreviewDismissed(false);
+      setInputLinkPreview(null);
+    }
+
+    // If user dismissed this specific URL preview, do not fetch or show
+    if (isLinkPreviewDismissed) return;
+
+    if (previewDebounceRef.current) clearTimeout(previewDebounceRef.current);
+    previewDebounceRef.current = setTimeout(async () => {
+      try {
+        const res = await getLinkPreviewApi(currentUrl);
+        if (res?.data?.data) {
+          setInputLinkPreview(res.data.data);
+        } else {
+          setInputLinkPreview(null);
+        }
+      } catch {
+        setInputLinkPreview(null);
+      }
+    }, 350);
+
+    return () => {
+      if (previewDebounceRef.current) clearTimeout(previewDebounceRef.current);
+    };
+  }, [value, isLinkPreviewDismissed]);
 
   // Insert emoji at cursor position
   const handleEmojiSelect = (emojiData) => {
@@ -207,6 +273,22 @@ const MessageInput = ({
     }
   };
 
+  const handleFormSubmit = (e) => {
+    e?.preventDefault?.();
+    if (!disabled && (value.trim() || selectedFiles.length > 0) && !isUploading) {
+      setShowEmojiPicker(false);
+      const linkPreviewPayload = {
+        linkPreview: isLinkPreviewDismissed ? null : inputLinkPreview,
+        linkPreviewDismissed: isLinkPreviewDismissed,
+      };
+      // Clear preview state
+      setInputLinkPreview(null);
+      setIsLinkPreviewDismissed(false);
+      detectedUrlRef.current = null;
+      onSubmit(e, linkPreviewPayload);
+    }
+  };
+
   const handleKeyDown = (e) => {
     if (e.key === 'Escape') {
       if (editingMessage) {
@@ -219,13 +301,16 @@ const MessageInput = ({
         onCancelReply();
         return;
       }
+      if (inputLinkPreview) {
+        e.preventDefault();
+        setIsLinkPreviewDismissed(true);
+        setInputLinkPreview(null);
+        return;
+      }
     }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (!disabled && (value.trim() || selectedFiles.length > 0) && !isUploading) {
-        setShowEmojiPicker(false);
-        onSubmit(e);
-      }
+      handleFormSubmit(e);
     }
   };
 
@@ -300,6 +385,50 @@ const MessageInput = ({
             onClick={onCancelEdit}
             className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
             title="Cancel editing (Esc)"
+          >
+            <X size={15} />
+          </button>
+        </div>
+      )}
+      {/* WhatsApp-Style Input Dock Pre-Flight Link Preview Banner (Phase 14) */}
+      {inputLinkPreview && !isLinkPreviewDismissed && (
+        <div className="flex items-center justify-between gap-3 px-4 py-2 bg-slate-100/95 dark:bg-slate-800/95 border-b border-slate-200/80 dark:border-slate-700/80 text-xs animate-in slide-in-from-bottom-2 duration-150 backdrop-blur-md">
+          <div className="flex items-center gap-2.5 min-w-0 border-l-3 border-indigo-600 dark:border-indigo-400 pl-2.5">
+            {inputLinkPreview.image ? (
+              <img
+                src={inputLinkPreview.image}
+                alt={inputLinkPreview.title || 'Preview'}
+                className="w-10 h-10 rounded-lg object-cover shrink-0 bg-slate-200 dark:bg-slate-700 border border-slate-200/80 dark:border-slate-700/80"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/80 dark:border-indigo-800/60 flex items-center justify-center shrink-0 text-indigo-500">
+                <Globe size={18} />
+              </div>
+            )}
+            <div className="min-w-0">
+              <div className="font-bold text-slate-800 dark:text-slate-100 truncate text-xs max-w-xs sm:max-w-md">
+                {inputLinkPreview.title || inputLinkPreview.url}
+              </div>
+              {inputLinkPreview.description && (
+                <div className="text-slate-500 dark:text-slate-400 truncate text-[11px] mt-0.5 max-w-xs sm:max-w-md">
+                  {inputLinkPreview.description}
+                </div>
+              )}
+              <div className="flex items-center gap-1 font-semibold text-indigo-600 dark:text-indigo-400 text-[10.5px] lowercase tracking-wide mt-1">
+                <Globe size={10} className="shrink-0" />
+                <span className="truncate">{inputLinkPreview.url || inputLinkPreview.siteName}</span>
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setIsLinkPreviewDismissed(true);
+              setInputLinkPreview(null);
+            }}
+            className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700 transition-colors cursor-pointer shrink-0"
+            title="Remove link preview"
           >
             <X size={15} />
           </button>
@@ -574,7 +703,7 @@ const MessageInput = ({
             </div>
           )
         ) : (
-          <form onSubmit={(e) => { setShowEmojiPicker(false); onSubmit(e); }} className="flex items-center gap-2">
+          <form onSubmit={handleFormSubmit} className="flex items-end gap-2 pb-0.5">
             {/* Hidden File Input with 'multiple' enabled */}
             <input
               type="file"
@@ -586,7 +715,7 @@ const MessageInput = ({
             />
 
             {/* Attachment & Emoji actions */}
-            <div className="flex items-center text-slate-400">
+            <div className="flex items-center text-slate-400 mb-0.5">
               {!editingMessage && (
                 <button
                   type="button"
@@ -617,11 +746,11 @@ const MessageInput = ({
               </button>
             </div>
 
-            {/* Text Input */}
-            <div className="flex-1 relative">
-              <input
+            {/* Text Input (Outer pill wrapper prevents scrollbar clipping) */}
+            <div className="flex-1 relative bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-2xl focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500/30 transition-[border-color,box-shadow] min-h-[44px] flex items-center px-4 py-2.5">
+              <textarea
                 ref={textInputRef}
-                type="text"
+                rows={1}
                 value={value}
                 onChange={onChange}
                 onKeyDown={handleKeyDown}
@@ -633,7 +762,7 @@ const MessageInput = ({
                     ? 'Add a caption...'
                     : placeholder
                 }
-                className="w-full h-11 px-4 text-sm font-medium text-slate-800 dark:text-slate-100 bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-2xl outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 transition-all disabled:opacity-50"
+                className="w-full resize-none bg-transparent outline-none border-0 p-0 text-sm font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 leading-relaxed block focus:ring-0"
               />
             </div>
 

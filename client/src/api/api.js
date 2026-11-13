@@ -51,3 +51,8 @@ export const editMessageApi = (messageId, message) => {
     return apiInstance.patch(`/messages/edit/${messageId}`, { message });
 }
 
+export const getLinkPreviewApi = (url) => {
+    return apiInstance.get(`/messages/link-preview?url=${encodeURIComponent(url)}`);
+}
+
+

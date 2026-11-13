@@ -7,6 +7,7 @@ import { getReceiverSocketIds, io } from "../socket/socket.js";
 import { deleteObjectsFromOCI, generatePreSignedUploadUrl } from "../utils/ociStorage.util.js";
 import { text } from "express";
 import uploadIntentModel from "../models/uploadIntent.model.js";
+import { extractLinkPreview } from "../utils/linkPreview.js";
 import { error } from "console";
 
 
@@ -92,7 +93,8 @@ const abortUpload = expressAsyncHandler(async (req, res) => {
 const sendMessage = expressAsyncHandler(async (req, res, next) => {
     const senderId = req.user._id;
     const receiverId = req.params.id;
-    const { message = "", attachments = [], messageType = "text", uploadIntentId, replyTo } = req.body;
+    const { message = "", attachments = [], messageType = "text", uploadIntentId, replyTo, linkPreview: clientPreview,
+        linkPreviewDismissed = false } = req.body;
     const hasTextMessage = Boolean(message && message.trim());
     const hasAttachments = Array.isArray(attachments) && attachments.length > 0;
     if (!hasTextMessage && !hasAttachments) {
@@ -141,6 +143,22 @@ const sendMessage = expressAsyncHandler(async (req, res, next) => {
             }
         }
     }
+
+    // Phase 14: Resolve Link Preview (Pre-flight hit OR Fast-submit fallback)
+    let finalLinkPreview = null;
+    if (!linkPreviewDismissed) {
+        if (clientPreview && clientPreview.url) {
+            // Instant hit from client pre-flight
+            finalLinkPreview = clientPreview;
+        } else if (message && typeof message === "string") {
+            // 20ms fast-submit fallback: check cache or scrape
+            const urlMatch = message.match(/https?:\/\/[^\s]+/i);
+            if (urlMatch) {
+                finalLinkPreview = await extractLinkPreview(urlMatch[0]);
+            }
+        }
+    }
+
     const newMessage = await messageModel.create({
         senderId,
         receiverId,
@@ -150,7 +168,8 @@ const sendMessage = expressAsyncHandler(async (req, res, next) => {
         messageType: finalMessageType,
         attachments: attachments,
         replyTo: replyTo || null,  // <--- // Pointer for jump-to-message
-        replySnapshot: replySnapshot
+        replySnapshot: replySnapshot,
+        linkPreview: finalLinkPreview   // 👈 Save linkPreview
     })
     // If an uploadIntentId was sent, mark it as completed (or delete it)
     if (uploadIntentId) {
@@ -381,6 +400,12 @@ const editMessage = expressAsyncHandler(async (req, res) => {
     const editedAt = new Date();
     const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
 
+    let editedLinkPreview = null;
+    const urlMatch = newText.match(/https?:\/\/[^\s]+/i);
+    if (urlMatch) {
+        editedLinkPreview = await extractLinkPreview(urlMatch[0]);
+    }
+
     // 2. FAST PATH: Attempt the atomic update in ONE database roundtrip!
     const updatedMessage = await messageModel.findOneAndUpdate(
         {
@@ -395,6 +420,7 @@ const editMessage = expressAsyncHandler(async (req, res) => {
                 message: newText.trim(),
                 isEdited: true,
                 editedAt: editedAt,
+                linkPreview: editedLinkPreview // 👈 Updates or clears preview atomically
             }
         },
         { new: true }
@@ -413,7 +439,8 @@ const editMessage = expressAsyncHandler(async (req, res) => {
                 conversationId: updatedMessage.conversationId,
                 message: updatedMessage.message,
                 isEdited: updatedMessage.isEdited,
-                editedAt: updatedMessage.editedAt
+                editedAt: updatedMessage.editedAt,
+                linkPreview: updatedMessage.linkPreview // 👈 Emit to receiver
             });
         });
         return new ApiResponse(200, true, "Message edited successfully", updatedMessage).send(res);
@@ -443,4 +470,17 @@ const editMessage = expressAsyncHandler(async (req, res) => {
     throw new ErrorHandler(409, "Message could not be edited due to a conflict");
 })
 
-export { sendMessage, getMessage, getUploadUrl, abortUpload, toggleReaction, deleteForMe, deleteForEveryone, editMessage };
+//& @desc    Pre-flight Link Preview Scraper (Pattern 2 - WhatsApp Standard)
+//& @route   GET /api/v1/messages/link-preview?url=...
+//& @access  Private
+const getLinkPreview = expressAsyncHandler(async (req, res) => {
+    const { url } = req.query;
+    if (!url || typeof url !== "string") {
+        throw new ErrorHandler(400, "URL query parameter is required");
+    }
+
+    const preview = await extractLinkPreview(url);
+    new ApiResponse(200, true, "Link preview fetched", preview).send(res);
+});
+
+export { sendMessage, getMessage, getUploadUrl, abortUpload, toggleReaction, deleteForMe, deleteForEveryone, editMessage, getLinkPreview };

@@ -264,6 +264,7 @@ const ChatContainer = ({
                     replySnapshot={msg.replySnapshot}
                     isDeletedForEveryone={msg.isDeletedForEveryone || false}
                     isEdited={msg.isEdited || false}
+                    linkPreview={msg.linkPreview || null}
                     isHighlighted={highlightedMessageId === msg._id}
                     currentUserId={currentUser?._id}
                     onToggleReaction={onToggleReaction}
