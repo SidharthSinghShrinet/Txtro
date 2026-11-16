@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 640" width="100%" height="100%">
+  <defs>
+    <linearGradient id="fsmBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b1120"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <filter id="fsmShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#000" flood-opacity="0.6"/>
+    </filter>
+    <marker id="fsmArrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#6366f1"/>
+    </marker>
+    <marker id="fsmArrowRose" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#f43f5e"/>
+    </marker>
+    <marker id="fsmArrowGreen" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#10b981"/>
+    </marker>
+  </defs>
+
+  <rect width="960" height="640" fill="url(#fsmBg)" rx="16"/>
+  <rect x="1" y="1" width="958" height="638" fill="none" stroke="#1e293b" stroke-width="2" rx="15"/>
+
+  <!-- Header -->
+  <text x="480" y="38" fill="#f8fafc" font-family="system-ui, sans-serif" font-size="19" font-weight="bold" text-anchor="middle">Txtro Phase 9: Audio Recording Dock Finite State Machine (FSM)</text>
+  <text x="480" y="58" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="11.5" text-anchor="middle">Deterministic State Transitions, Safety Limits, and Hardware Lifecycle Management</text>
+
+  <!-- STATE 1: IDLE -->
+  <g transform="translate(340, 85)">
+    <rect width="280" height="90" fill="#1e293b" stroke="#64748b" stroke-width="2" rx="12" filter="url(#fsmShadow)"/>
+    <rect x="12" y="10" width="55" height="18" fill="#475569" rx="4"/>
+    <text x="39.5" y="23" fill="#f8fafc" font-family="system-ui, sans-serif" font-size="9.5" font-weight="bold" text-anchor="middle">STATE 1</text>
+    <text x="75" y="24" fill="#f8fafc" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">IDLE DOCK</text>
+    <text x="20" y="48" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10.5">• Standard Text Input Bar Active</text>
+    <text x="20" y="64" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10.5">• Attachments &amp; Emoji Buttons Ready</text>
+    <text x="20" y="80" fill="#38bdf8" font-family="system-ui, sans-serif" font-size="10.5" font-weight="bold">• Microphone Trigger Icon Visible</text>
+  </g>
+
+  <!-- Transition Idle -> Live Recording -->
+  <path d="M 480 175 L 480 235" fill="none" stroke="#f43f5e" stroke-width="2.5" marker-end="url(#fsmArrowRose)"/>
+  <rect x="400" y="195" width="160" height="22" fill="#881337" rx="5"/>
+  <text x="480" y="210" fill="#ffe4e6" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">Tap Mic Icon (startRecording)</text>
+
+  <!-- STATE 2: LIVE RECORDING -->
+  <g transform="translate(100, 240)">
+    <rect width="320" height="120" fill="#831843" fill-opacity="0.3" stroke="#f43f5e" stroke-width="2" rx="12" filter="url(#fsmShadow)"/>
+    <rect x="14" y="12" width="55" height="18" fill="#f43f5e" rx="4"/>
+    <text x="41.5" y="25" fill="#ffffff" font-family="system-ui, sans-serif" font-size="9.5" font-weight="bold" text-anchor="middle">STATE 2</text>
+    <text x="78" y="26" fill="#fecdd3" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">LIVE RECORDING</text>
+    <text x="20" y="52" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="10.5">• Blinking Red Dot &amp; Monotonic Stopwatch</text>
+    <text x="20" y="69" fill="#f43f5e" font-family="system-ui, sans-serif" font-size="10.5" font-weight="bold">• 28 Animated Rose Dancing Bars (60 FPS)</text>
+    <text x="20" y="86" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="10.5">• MediaRecorder Slices Audio Every 200ms</text>
+    <text x="20" y="103" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="10.5">• Actions: Trash Discard / Pause / Send</text>
+  </g>
+
+  <!-- Transition Live -> Idle (Discard) -->
+  <path d="M 120 240 C 90 180, 200 130, 340 130" fill="none" stroke="#64748b" stroke-width="1.8" stroke-dasharray="4,4" marker-end="url(#fsmArrow)"/>
+  <rect x="130" y="145" width="130" height="20" fill="#1e293b" rx="4"/>
+  <text x="195" y="159" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9" text-anchor="middle">Tap Trash (cancelRecording)</text>
+
+  <!-- Transition Live -> Review (Pause or 10m ceiling) -->
+  <path d="M 420 280 L 536 280" fill="none" stroke="#6366f1" stroke-width="2.2" marker-end="url(#seqArrow)"/>
+  <rect x="425" y="258" width="110" height="20" fill="#312e81" rx="4"/>
+  <text x="480" y="272" fill="#c7d2fe" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" text-anchor="middle">Tap Pause Button</text>
+  
+  <path d="M 420 320 L 536 320" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="3,3" marker-end="url(#seqArrow)"/>
+  <rect x="425" y="325" width="110" height="20" fill="#451a03" rx="4"/>
+  <text x="480" y="339" fill="#fde68a" font-family="system-ui, sans-serif" font-size="8.5" font-weight="bold" text-anchor="middle">10-Min Ceiling (600s)</text>
+
+  <!-- STATE 3: PAUSED REVIEW DOCK -->
+  <g transform="translate(540, 240)">
+    <rect width="320" height="120" fill="#1e1b4b" fill-opacity="0.4" stroke="#6366f1" stroke-width="2" rx="12" filter="url(#fsmShadow)"/>
+    <rect x="14" y="12" width="55" height="18" fill="#6366f1" rx="4"/>
+    <text x="41.5" y="25" fill="#ffffff" font-family="system-ui, sans-serif" font-size="9.5" font-weight="bold" text-anchor="middle">STATE 3</text>
+    <text x="78" y="26" fill="#e0e7ff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">PAUSED REVIEW DOCK</text>
+    <text x="20" y="52" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="10.5">• Temporary blob: URL Preview Player</text>
+    <text x="20" y="69" fill="#818cf8" font-family="system-ui, sans-serif" font-size="10.5" font-weight="bold">• 28 Recorded Speech Peaks (Indigo Active)</text>
+    <text x="20" y="86" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="10.5">• Fluid Pointer Drag-to-Seek Scrubber</text>
+    <text x="20" y="103" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="10.5">• Actions: Resume Mic / Discard / Send</text>
+  </g>
+
+  <!-- Transition Review -> Live (Resume) -->
+  <path d="M 600 360 C 560 410, 400 410, 360 360" fill="none" stroke="#10b981" stroke-width="2" marker-end="url(#fsmArrowGreen)"/>
+  <rect x="420" y="395" width="120" height="20" fill="#064e3b" rx="4"/>
+  <text x="480" y="409" fill="#a7f3d0" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" text-anchor="middle">Tap Resume (Mic Icon)</text>
+
+  <!-- Transition Review -> Idle (Discard) -->
+  <path d="M 840 240 C 870 180, 760 130, 620 130" fill="none" stroke="#64748b" stroke-width="1.8" stroke-dasharray="4,4" marker-end="url(#fsmArrow)"/>
+  <rect x="710" y="145" width="130" height="20" fill="#1e293b" rx="4"/>
+  <text x="775" y="159" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9" text-anchor="middle">Tap Trash (cancelRecording)</text>
+
+  <!-- Transitions to State 4: Uploading -->
+  <!-- From Live -> Uploading -->
+  <path d="M 260 360 L 260 475 L 350 475" fill="none" stroke="#10b981" stroke-width="2.2" marker-end="url(#fsmArrowGreen)"/>
+  <rect x="180" y="445" width="120" height="20" fill="#064e3b" rx="4"/>
+  <text x="240" y="459" fill="#a7f3d0" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" text-anchor="middle">Direct Send Button</text>
+
+  <!-- From Review -> Uploading -->
+  <path d="M 700 360 L 700 475 L 610 475" fill="none" stroke="#10b981" stroke-width="2.2" marker-end="url(#fsmArrowGreen)"/>
+  <rect x="660" y="445" width="120" height="20" fill="#064e3b" rx="4"/>
+  <text x="720" y="459" fill="#a7f3d0" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" text-anchor="middle">Send After Review</text>
+
+  <!-- STATE 4: UPLOADING & RESOLUTION -->
+  <g transform="translate(340, 440)">
+    <rect width="280" height="95" fill="#064e3b" fill-opacity="0.4" stroke="#10b981" stroke-width="2" rx="12" filter="url(#fsmShadow)"/>
+    <rect x="12" y="10" width="55" height="18" fill="#10b981" rx="4"/>
+    <text x="39.5" y="23" fill="#ffffff" font-family="system-ui, sans-serif" font-size="9.5" font-weight="bold" text-anchor="middle">STATE 4</text>
+    <text x="75" y="24" fill="#d1fae5" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">UPLOADING &amp; COMMIT</text>
+    <text x="20" y="48" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="10.5">• Spinner on Send Button (&lt;Loader2&gt;)</text>
+    <text x="20" y="65" fill="#a7f3d0" font-family="system-ui, sans-serif" font-size="10.5" font-weight="bold">• Direct-to-OCI HTTP PUT Stream</text>
+    <text x="20" y="82" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="10.5">• 2PC UploadIntent -&gt; MongoDB Commit</text>
+  </g>
+
+  <!-- Return from Uploading to Idle -->
+  <path d="M 340 490 C 20 490, 20 130, 340 130" fill="none" stroke="#10b981" stroke-width="2" stroke-dasharray="4,4" marker-end="url(#fsmArrowGreen)"/>
+  <rect x="25" y="300" width="160" height="24" fill="#064e3b" rx="5"/>
+  <text x="105" y="316" fill="#a7f3d0" font-family="system-ui, sans-serif" font-size="9.5" font-weight="bold" text-anchor="middle">HTTP 201 Created (Confirmed)</text>
+</svg>

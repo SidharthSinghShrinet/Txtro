@@ -1,0 +1,163 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 780" width="100%" height="100%">
+  <defs>
+    <linearGradient id="p12GradBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f19"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="p12Card1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b4b" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="p12Card2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#064e3b" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="p12Card3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#831843" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="p12Card4" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a8a" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.95"/>
+    </linearGradient>
+    <filter id="p12Shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+    <marker id="p12ArrowIndigo" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#6366f1"/>
+    </marker>
+    <marker id="p12ArrowGreen" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#10b981"/>
+    </marker>
+    <marker id="p12ArrowRose" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#f43f5e"/>
+    </marker>
+    <marker id="p12ArrowBlue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#3b82f6"/>
+    </marker>
+  </defs>
+
+  <rect width="1000" height="780" fill="url(#p12GradBg)" rx="16"/>
+  <rect x="1" y="1" width="998" height="778" fill="none" stroke="#1f2937" stroke-width="2" rx="15"/>
+
+  <!-- Title Banner -->
+  <text x="500" y="42" fill="#f8fafc" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="bold" text-anchor="middle" letter-spacing="0.5">Txtro Phase 12: Dual Message Deletion Architecture</text>
+  <text x="500" y="65" fill="#94a3b8" font-family="system-ui, -apple-system, sans-serif" font-size="12" text-anchor="middle">Delete for Me (ID Exclusion) vs. Delete for Everyone (Atomic CAS &amp; OCI Purge)</text>
+
+  <!-- STAGE 1: Dual Trigger & Authorization Guard -->
+  <g transform="translate(40, 90)">
+    <rect width="920" height="135" fill="url(#p12Card1)" stroke="#4338ca" stroke-width="1.5" rx="12" filter="url(#p12Shadow)"/>
+    <rect x="16" y="14" width="85" height="24" fill="#4f46e5" rx="6"/>
+    <text x="58" y="30" fill="#ffffff" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">STAGE 1</text>
+    <text x="115" y="31" fill="#e0e7ff" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">Interaction, Modal &amp; Authorization Guard</text>
+
+    <rect x="25" y="52" width="260" height="65" fill="#1e1b4b" stroke="#6366f1" stroke-width="1" rx="8"/>
+    <text x="155" y="74" fill="#a5b4fc" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">Desktop / Mobile Trigger</text>
+    <text x="155" y="91" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle">Hover trash icon or swipe action</text>
+    <text x="155" y="105" fill="#64748b" font-family="system-ui, sans-serif" font-size="9" text-anchor="middle">Mounts confirmation modal</text>
+
+    <line x1="285" y1="84" x2="325" y2="84" stroke="#6366f1" stroke-width="2" marker-end="url(#p12ArrowIndigo)"/>
+
+    <rect x="335" y="52" width="260" height="65" fill="#1e1b4b" stroke="#6366f1" stroke-width="1" rx="8"/>
+    <text x="465" y="74" fill="#a5b4fc" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">48-Hour Authorization Window</text>
+    <text x="465" y="91" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle">isSender &amp;&amp; messageAge &lt;= 48h</text>
+    <text x="465" y="105" fill="#64748b" font-family="system-ui, sans-serif" font-size="9" text-anchor="middle">Exposes &apos;Delete for Everyone&apos;</text>
+
+    <line x1="595" y1="84" x2="635" y2="84" stroke="#6366f1" stroke-width="2" marker-end="url(#p12ArrowIndigo)"/>
+
+    <rect x="645" y="52" width="250" height="65" fill="#1e1b4b" stroke="#6366f1" stroke-width="1" rx="8"/>
+    <text x="770" y="74" fill="#a5b4fc" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">Two Clean Endpoints</text>
+    <text x="770" y="91" fill="#10b981" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">DELETE /delete-for-me/:id</text>
+    <text x="770" y="105" fill="#f43f5e" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">DELETE /delete-for-everyone/:id</text>
+  </g>
+
+  <!-- Connector 1 -> 2 -->
+  <line x1="500" y1="225" x2="500" y2="255" stroke="#6366f1" stroke-width="2" stroke-dasharray="4,4" marker-end="url(#p12ArrowIndigo)"/>
+
+  <!-- STAGE 2: 0ms Optimistic UI Layer -->
+  <g transform="translate(40, 260)">
+    <rect width="920" height="135" fill="url(#p12Card2)" stroke="#059669" stroke-width="1.5" rx="12" filter="url(#p12Shadow)"/>
+    <rect x="16" y="14" width="85" height="24" fill="#10b981" rx="6"/>
+    <text x="58" y="30" fill="#ffffff" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">STAGE 2</text>
+    <text x="115" y="31" fill="#d1fae5" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">0ms Optimistic UI &amp; State Mutation Engine</text>
+
+    <rect x="25" y="52" width="260" height="65" fill="#064e3b" stroke="#10b981" stroke-width="1" rx="8"/>
+    <text x="155" y="74" fill="#a7f3d0" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">Delete for Me (0ms)</text>
+    <text x="155" y="91" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle">messages.filter(m =&gt; m._id !== id)</text>
+    <text x="155" y="105" fill="#10b981" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" text-anchor="middle">Instant local removal from chat</text>
+
+    <line x1="285" y1="84" x2="325" y2="84" stroke="#10b981" stroke-width="2" marker-end="url(#p12ArrowGreen)"/>
+
+    <rect x="335" y="52" width="260" height="65" fill="#064e3b" stroke="#10b981" stroke-width="1" rx="8"/>
+    <text x="465" y="74" fill="#a7f3d0" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">Delete for Everyone (0ms)</text>
+    <text x="465" y="91" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle">In-place bubble tombstoning</text>
+    <text x="465" y="105" fill="#10b981" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" text-anchor="middle">&quot;🚫 You deleted this message&quot;</text>
+
+    <line x1="595" y1="84" x2="635" y2="84" stroke="#10b981" stroke-width="2" marker-end="url(#p12ArrowGreen)"/>
+
+    <rect x="645" y="52" width="250" height="65" fill="#064e3b" stroke="#10b981" stroke-width="1" rx="8"/>
+    <text x="770" y="74" fill="#a7f3d0" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">Sidebar LastMessage Sync</text>
+    <text x="770" y="91" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle">Recalculates conversation preview</text>
+    <text x="770" y="105" fill="#10b981" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" text-anchor="middle">Rolls back cleanly on network drop</text>
+  </g>
+
+  <!-- Connector 2 -> 3 -->
+  <line x1="500" y1="395" x2="500" y2="425" stroke="#10b981" stroke-width="2" stroke-dasharray="4,4" marker-end="url(#p12ArrowGreen)"/>
+
+  <!-- STAGE 3: OCI Cloud Purge & Atomic CAS -->
+  <g transform="translate(40, 430)">
+    <rect width="920" height="135" fill="url(#p12Card3)" stroke="#be123c" stroke-width="1.5" rx="12" filter="url(#p12Shadow)"/>
+    <rect x="16" y="14" width="85" height="24" fill="#e11d48" rx="6"/>
+    <text x="58" y="30" fill="#ffffff" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">STAGE 3</text>
+    <text x="115" y="31" fill="#ffe4e6" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">OCI-First Cloud Purge &amp; Atomic CAS Execution</text>
+
+    <rect x="25" y="52" width="260" height="65" fill="#831843" stroke="#f43f5e" stroke-width="1" rx="8"/>
+    <text x="155" y="74" fill="#fecdd3" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">Step 1: OCI Cloud Purge First</text>
+    <text x="155" y="91" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle">deleteObjectsFromOCI(keys)</text>
+    <text x="155" y="105" fill="#fb7185" font-family="system-ui, sans-serif" font-size="9" text-anchor="middle">Zero orphaned cloud assets</text>
+
+    <line x1="285" y1="84" x2="325" y2="84" stroke="#f43f5e" stroke-width="2" marker-end="url(#p12ArrowRose)"/>
+
+    <rect x="335" y="52" width="260" height="65" fill="#831843" stroke="#f43f5e" stroke-width="1" rx="8"/>
+    <text x="465" y="74" fill="#fecdd3" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">Step 2: Atomic CAS Filter</text>
+    <text x="465" y="91" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle">{ isDeletedForEveryone: false }</text>
+    <text x="465" y="105" fill="#fb7185" font-family="system-ui, sans-serif" font-size="9.5" text-anchor="middle">Eliminates duplicate delete races</text>
+
+    <line x1="595" y1="84" x2="635" y2="84" stroke="#f43f5e" stroke-width="2" marker-end="url(#p12ArrowRose)"/>
+
+    <rect x="645" y="52" width="250" height="65" fill="#831843" stroke="#f43f5e" stroke-width="1" rx="8"/>
+    <text x="770" y="74" fill="#fecdd3" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">Step 3: Document Wipe</text>
+    <text x="770" y="91" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle">$set: { message: &quot;&quot;, attachments: [] }</text>
+    <text x="770" y="105" fill="#10b981" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" text-anchor="middle">Permanent privacy erasure</text>
+  </g>
+
+  <!-- Connector 3 -> 4 -->
+  <line x1="500" y1="565" x2="500" y2="595" stroke="#f43f5e" stroke-width="2" stroke-dasharray="4,4" marker-end="url(#p12ArrowRose)"/>
+
+  <!-- STAGE 4: Real-Time Tombstone Broadcast -->
+  <g transform="translate(40, 600)">
+    <rect width="920" height="135" fill="url(#p12Card4)" stroke="#1d4ed8" stroke-width="1.5" rx="12" filter="url(#p12Shadow)"/>
+    <rect x="16" y="14" width="85" height="24" fill="#2563eb" rx="6"/>
+    <text x="58" y="30" fill="#ffffff" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">STAGE 4</text>
+    <text x="115" y="31" fill="#dbeafe" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">Real-Time Socket Broadcast &amp; Tombstone Sync</text>
+
+    <rect x="25" y="52" width="260" height="65" fill="#1e3a8a" stroke="#3b82f6" stroke-width="1" rx="8"/>
+    <text x="155" y="74" fill="#bfdbfe" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">Socket.IO messageDeleted</text>
+    <text x="155" y="91" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle">Targeted to peer active sockets</text>
+    <text x="155" y="105" fill="#3b82f6" font-family="system-ui, sans-serif" font-size="9" text-anchor="middle">Delivers tombstone in ~40ms</text>
+
+    <line x1="285" y1="84" x2="325" y2="84" stroke="#3b82f6" stroke-width="2" marker-end="url(#p12ArrowBlue)"/>
+
+    <rect x="335" y="52" width="260" height="65" fill="#1e3a8a" stroke="#3b82f6" stroke-width="1" rx="8"/>
+    <text x="465" y="74" fill="#bfdbfe" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">Peer Tombstone Paint</text>
+    <text x="465" y="91" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle">&quot;🚫 This message was deleted&quot;</text>
+    <text x="465" y="105" fill="#10b981" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" text-anchor="middle">Reactions &amp; media purged</text>
+
+    <line x1="595" y1="84" x2="635" y2="84" stroke="#3b82f6" stroke-width="2" marker-end="url(#p12ArrowBlue)"/>
+
+    <rect x="645" y="52" width="250" height="65" fill="#1e3a8a" stroke="#3b82f6" stroke-width="1" rx="8"/>
+    <text x="770" y="74" fill="#bfdbfe" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">Quoted Invariance Intact</text>
+    <text x="770" y="91" fill="#10b981" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">replySnapshot remains frozen</text>
+    <text x="770" y="105" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9" text-anchor="middle">Historical context preserved</text>
+  </g>
+</svg>

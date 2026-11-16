@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 460" width="100%" height="100%">
+  <defs>
+    <linearGradient id="snapBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f19"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1000" height="460" fill="url(#snapBg)" rx="16"/>
+  <rect x="1" y="1" width="998" height="458" fill="none" stroke="#1f2937" stroke-width="2" rx="15"/>
+
+  <!-- Title -->
+  <text x="500" y="42" fill="#f8fafc" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="bold" text-anchor="middle">Txtro Phase 11: Hybrid Snapshot vs. Pure Relational Pointer</text>
+  <text x="500" y="65" fill="#94a3b8" font-family="system-ui, -apple-system, sans-serif" font-size="12" text-anchor="middle">Why Txtro Chose the WhatsApp/Telegram Immutable Snapshot Pattern</text>
+
+  <!-- Left Card: Pure Relational Pointer -->
+  <g transform="translate(60, 100)">
+    <rect width="410" height="310" fill="#1f1315" stroke="#e11d48" stroke-width="1.5" rx="12"/>
+    <rect x="16" y="16" width="120" height="26" fill="#9f1239" rx="6"/>
+    <text x="76" y="33" fill="#ffffff" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">APPROACH A</text>
+    <text x="145" y="34" fill="#fecdd3" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Pure Relational Pointer</text>
+
+    <text x="20" y="75" fill="#fca5a5" font-family="system-ui, sans-serif" font-size="11" font-weight="bold">❌ O(N) Join Overhead on Every Fetch</text>
+    <text x="20" y="92" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">Requires Mongoose .populate(&apos;replyTo&apos;) on 100% of messages.</text>
+    <text x="20" y="106" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">Severely degrades API response times during thread scroll.</text>
+
+    <text x="20" y="140" fill="#fca5a5" font-family="system-ui, sans-serif" font-size="11" font-weight="bold">❌ Broken Context on Message Deletion</text>
+    <text x="20" y="157" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">If the sender deletes the original message for everyone,</text>
+    <text x="20" y="171" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">the quoted card breaks with &quot;Deleted&quot; or null reference!</text>
+
+    <text x="20" y="205" fill="#fca5a5" font-family="system-ui, sans-serif" font-size="11" font-weight="bold">❌ Dynamic Edit Mutations</text>
+    <text x="20" y="222" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">If Message A is edited later, past quotes alter retroactively,</text>
+    <text x="20" y="236" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">corrupting conversational intent and audit history.</text>
+
+    <rect x="20" y="255" width="370" height="35" fill="#3b0d14" stroke="#e11d48" stroke-width="1" rx="6"/>
+    <text x="205" y="277" fill="#fca5a5" font-family="system-ui, sans-serif" font-size="10.5" font-weight="bold" text-anchor="middle">Verdict: Fragile, Slow &amp; Destroys Context</text>
+  </g>
+
+  <!-- Right Card: Hybrid Snapshot Architecture -->
+  <g transform="translate(530, 100)">
+    <rect width="410" height="310" fill="#06281e" stroke="#10b981" stroke-width="1.5" rx="12"/>
+    <rect x="16" y="16" width="120" height="26" fill="#047857" rx="6"/>
+    <text x="76" y="33" fill="#ffffff" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">APPROACH B</text>
+    <text x="145" y="34" fill="#a7f3d0" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Hybrid Snapshot (Txtro)</text>
+
+    <text x="20" y="75" fill="#6ee7b7" font-family="system-ui, sans-serif" font-size="11" font-weight="bold">✅ O(1) Instant Zero-Join Reads</text>
+    <text x="20" y="92" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">getMessages fetches embedded replySnapshot directly.</text>
+    <text x="20" y="106" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">0 database joins; zero populate() server CPU overhead.</text>
+
+    <text x="20" y="140" fill="#6ee7b7" font-family="system-ui, sans-serif" font-size="11" font-weight="bold">✅ WhatsApp Deletion Invariant Protected</text>
+    <text x="20" y="157" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">Even if original message is &apos;Deleted for Everyone&apos;, the</text>
+    <text x="20" y="171" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">quoted card immutably preserves the historical snapshot.</text>
+
+    <text x="20" y="205" fill="#6ee7b7" font-family="system-ui, sans-serif" font-size="11" font-weight="bold">✅ Tiny ~65 Byte Storage Trade-off</text>
+    <text x="20" y="222" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">1,000,000 replied messages take only ~65 MB in MongoDB.</text>
+    <text x="20" y="236" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">pointer (replyTo) still preserves O(1) jump navigation.</text>
+
+    <rect x="20" y="255" width="370" height="35" fill="#064e3b" stroke="#10b981" stroke-width="1" rx="6"/>
+    <text x="205" y="277" fill="#a7f3d0" font-family="system-ui, sans-serif" font-size="10.5" font-weight="bold" text-anchor="middle">Verdict: 100% Immutable, Fast &amp; Enterprise-Grade</text>
+  </g>
+</svg>

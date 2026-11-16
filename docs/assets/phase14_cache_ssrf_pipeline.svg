@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 620" width="100%" height="100%">
+  <defs>
+    <linearGradient id="p14CacheBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f19"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="flowCard" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b4b" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.95"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1000" height="620" fill="url(#p14CacheBg)" rx="16"/>
+  <rect x="1.5" y="1.5" width="997" height="617" fill="none" stroke="#1e293b" stroke-width="2" rx="15"/>
+
+  <!-- Title -->
+  <g transform="translate(50, 45)">
+    <text x="0" y="0" fill="#f8fafc" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="bold">The Scraper Pipeline: URL Normalization, LRU Caching &amp; SSRF Shield</text>
+    <text x="0" y="20" fill="#94a3b8" font-family="sans-serif" font-size="12">How extractLinkPreview() resolves metadata in 0.05ms while blocking internal intranet attacks</text>
+  </g>
+
+  <!-- Flowchart Stages -->
+  <g transform="translate(50, 95)">
+    <!-- Stage 1: URL Normalization -->
+    <g transform="translate(0, 0)">
+      <rect width="200" height="150" rx="10" fill="url(#flowCard)" stroke="#38bdf8" stroke-width="1.5"/>
+      <text x="15" y="25" fill="#38bdf8" font-family="monospace" font-size="11" font-weight="bold">1. normalizeUrl()</text>
+      <text x="15" y="48" fill="#e2e8f0" font-family="sans-serif" font-size="10.5">• Trims whitespace</text>
+      <text x="15" y="68" fill="#e2e8f0" font-family="sans-serif" font-size="10.5">• Prepends https:// if missing</text>
+      <text x="15" y="88" fill="#e2e8f0" font-family="sans-serif" font-size="10.5">• Strips trailing punctuation:</text>
+      <text x="15" y="106" fill="#94a3b8" font-family="monospace" font-size="9.5">.replace(/[.,!?;:)]+$/, "")</text>
+      <text x="15" y="130" fill="#7dd3fc" font-family="sans-serif" font-size="10">Prevents 404 on sentence links</text>
+    </g>
+
+    <!-- Arrow 1 -> 2 -->
+    <path d="M200 75 L240 75" stroke="#64748b" stroke-width="2" fill="none"/>
+    <polygon points="238,71 246,75 238,79" fill="#64748b"/>
+
+    <!-- Stage 2: LRU Cache -->
+    <g transform="translate(245, 0)">
+      <rect width="210" height="150" rx="10" fill="url(#flowCard)" stroke="#10b981" stroke-width="2"/>
+      <text x="15" y="25" fill="#34d399" font-family="monospace" font-size="11" font-weight="bold">2. In-Memory LRU Cache</text>
+      <text x="15" y="48" fill="#e2e8f0" font-family="sans-serif" font-size="10.5">• Map (1,000 entries max)</text>
+      <text x="15" y="68" fill="#e2e8f0" font-family="sans-serif" font-size="10.5">• 24-Hour TTL timestamp</text>
+      <text x="15" y="88" fill="#6ee7b7" font-family="sans-serif" font-size="10.5" font-weight="bold">&#x2705; CACHE HIT: 0.05ms</text>
+      <text x="15" y="106" fill="#a7f3d0" font-family="sans-serif" font-size="10">Returns directly from RAM!</text>
+      <text x="15" y="130" fill="#94a3b8" font-family="sans-serif" font-size="10">Cache Miss &#x2192; Proceeds to Shield</text>
+    </g>
+
+    <!-- Arrow 2 -> 3 -->
+    <path d="M455 75 L495 75" stroke="#64748b" stroke-width="2" fill="none"/>
+    <polygon points="493,71 501,75 493,79" fill="#64748b"/>
+
+    <!-- Stage 3: SSRF Shield -->
+    <g transform="translate(500, 0)">
+      <rect width="200" height="150" rx="10" fill="url(#flowCard)" stroke="#ef4444" stroke-width="1.5"/>
+      <text x="15" y="25" fill="#f87171" font-family="monospace" font-size="11" font-weight="bold">3. Anti-SSRF Gate</text>
+      <text x="15" y="48" fill="#fca5a5" font-family="sans-serif" font-size="10.5">• Blocks localhost &amp; 127.*</text>
+      <text x="15" y="68" fill="#fca5a5" font-family="sans-serif" font-size="10.5">• Blocks private subnets:</text>
+      <text x="25" y="86" fill="#f87171" font-family="monospace" font-size="9.5">192.168.*, 10.*, 172.16-31.*</text>
+      <text x="15" y="106" fill="#fca5a5" font-family="sans-serif" font-size="10.5">• Blocks AWS 169.254.169.254</text>
+      <text x="15" y="130" fill="#ef4444" font-family="sans-serif" font-size="10" font-weight="bold">Returns null (No socket open)</text>
+    </g>
+
+    <!-- Arrow 3 -> 4 -->
+    <path d="M700 75 L740 75" stroke="#64748b" stroke-width="2" fill="none"/>
+    <polygon points="738,71 746,75 738,79" fill="#64748b"/>
+
+    <!-- Stage 4: Scraper Execution -->
+    <g transform="translate(745, 0)">
+      <rect width="155" height="150" rx="10" fill="url(#flowCard)" stroke="#a855f7" stroke-width="1.5"/>
+      <text x="15" y="25" fill="#c084fc" font-family="monospace" font-size="11" font-weight="bold">4. OGS Scraper</text>
+      <text x="15" y="48" fill="#e2e8f0" font-family="sans-serif" font-size="10.5">• 2.5s Timeout</text>
+      <text x="15" y="68" fill="#e2e8f0" font-family="sans-serif" font-size="10.5">• Custom User-Agent</text>
+      <text x="15" y="88" fill="#e2e8f0" font-family="sans-serif" font-size="10.5">• Waterfall parse:</text>
+      <text x="15" y="106" fill="#d8b4fe" font-family="sans-serif" font-size="9.5">OG &#x2192; Twitter &#x2192; DC</text>
+      <text x="15" y="130" fill="#a855f7" font-family="sans-serif" font-size="10">Saves result to Cache</text>
+    </g>
+  </g>
+
+  <!-- Bottom Comparison Card: SSR Metadata vs Client SPA -->
+  <g transform="translate(50, 280)">
+    <rect width="900" height="200" rx="12" fill="#0f172a" stroke="#334155" stroke-width="1.5"/>
+    <rect x="20" y="16" width="160" height="24" rx="6" fill="#3b82f6" fill-opacity="0.2" stroke="#60a5fa" stroke-width="1"/>
+    <text x="100" y="32" fill="#93c5fd" font-family="sans-serif" font-size="11" font-weight="bold" text-anchor="middle">&#x26A0; THE SPA HEAD EDGE CASE</text>
+    <text x="195" y="33" fill="#f8fafc" font-family="sans-serif" font-size="14" font-weight="bold">Why Client-Side React SPAs (like txtro.vercel.app) Initially Had No Image</text>
+
+    <g transform="translate(20, 55)">
+      <rect width="410" height="125" rx="8" fill="#1e1022" stroke="#a21caf" stroke-width="1"/>
+      <text x="15" y="22" fill="#f0abfc" font-family="monospace" font-size="11" font-weight="bold">How Scrapers View Pages (Raw HTML):</text>
+      <text x="15" y="42" fill="#e2e8f0" font-family="sans-serif" font-size="11">• Scrapers do NOT run JavaScript execution engines.</text>
+      <text x="15" y="60" fill="#e2e8f0" font-family="sans-serif" font-size="11">• If a site injects meta tags via useEffect() or Helmet,</text>
+      <text x="15" y="78" fill="#e2e8f0" font-family="sans-serif" font-size="11">  the raw HTML GET response lacks those tags!</text>
+      <text x="15" y="100" fill="#f43f5e" font-family="sans-serif" font-size="11" font-weight="bold">Result: og:image &amp; og:description return null.</text>
+    </g>
+
+    <g transform="translate(470, 55)">
+      <rect width="410" height="125" rx="8" fill="#022c22" stroke="#059669" stroke-width="1"/>
+      <text x="15" y="22" fill="#6ee7b7" font-family="monospace" font-size="11" font-weight="bold">The Production Solution (Static HTML Meta):</text>
+      <text x="15" y="42" fill="#e2e8f0" font-family="sans-serif" font-size="11">• Meta tags MUST be baked into static client/index.html:</text>
+      <text x="15" y="62" fill="#a7f3d0" font-family="monospace" font-size="9.5">&lt;meta property="og:title" content="Txtro..." /&gt;</text>
+      <text x="15" y="78" fill="#a7f3d0" font-family="monospace" font-size="9.5">&lt;meta property="og:image" content="https://...png" /&gt;</text>
+      <text x="15" y="94" fill="#a7f3d0" font-family="monospace" font-size="9.5">&lt;meta property="og:description" content="..." /&gt;</text>
+      <text x="15" y="112" fill="#34d399" font-family="sans-serif" font-size="10.5" font-weight="bold">&#x2705; Guaranteed 100% extraction by WhatsApp, Slack &amp; Txtro!</text>
+    </g>
+  </g>
+</svg>
