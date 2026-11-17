@@ -246,7 +246,7 @@ const MessageBubble = ({
           transform: swipeOffset > 0 ? `translateX(${swipeOffset}px)` : undefined,
           transition: isSwiping ? 'none' : 'transform 0.2s ease-out',
         }}
-        className={`relative max-w-[88%] sm:max-w-[72%] flex items-center gap-1.5 ${isOutgoing ? 'flex-row' : 'flex-row-reverse'
+        className={`relative max-w-[85%] sm:max-w-[70%] min-w-0 flex items-center gap-1.5 ${isOutgoing ? 'flex-row' : 'flex-row-reverse'
           }`}
       >
         {/* Desktop Quick Action Buttons (Hover on Laptop / PC) */}
@@ -427,7 +427,7 @@ const MessageBubble = ({
               e.preventDefault();
             }
           }}
-          className={`rounded-2xl shadow-sm text-sm break-words relative transition-all overflow-hidden ${isHighlighted
+          className={`rounded-2xl shadow-sm text-sm break-words relative transition-all overflow-hidden min-w-0 max-w-full ${isHighlighted
             ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-slate-950 animate-pulse'
             : ''
             } ${isOutgoing
@@ -437,9 +437,11 @@ const MessageBubble = ({
               ? 'p-1.5'
               : audioAttachments.length > 0
                 ? (replySnapshot ? 'p-1.5' : 'px-3 py-2')
-                : replySnapshot
-                  ? 'px-1.5 py-2.5'
-                  : 'px-4 py-2.5'}`}
+                : docAttachments.length > 0
+                  ? 'p-2 sm:p-2.5'
+                  : replySnapshot
+                    ? 'px-1.5 py-2.5'
+                    : 'px-4 py-2.5'}`}
         >
           {/* Quoted Message Snapshot Card (Phase 11) */}
           {replySnapshot && (
@@ -608,11 +610,11 @@ const MessageBubble = ({
 
           {/* 3. DOCUMENT ATTACHMENTS LIST */}
           {docAttachments.length > 0 && (
-            <div className="space-y-1.5 mb-1.5">
+            <div className="w-full min-w-0 space-y-1.5 mb-1.5">
               {docAttachments.map((doc, idx) => (
                 <div
                   key={doc.fileUrl || idx}
-                  className={`flex items-center gap-3 p-2.5 rounded-xl border ${isOutgoing
+                  className={`flex items-center gap-2.5 sm:gap-3 p-2 sm:p-2.5 rounded-xl border w-full min-w-0 max-w-full overflow-hidden ${isOutgoing
                     ? 'bg-white/10 border-white/20 text-white'
                     : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-700/60 text-slate-800 dark:text-slate-100'
                     }`}
@@ -624,11 +626,13 @@ const MessageBubble = ({
                     <FileText size={18} />
                   </div>
 
-                  <div className="flex-1 min-w-0 pr-1">
-                    <p className="text-xs font-semibold truncate">{doc.fileName || 'Document'}</p>
+                  <div className="flex-1 min-w-0 pr-1 overflow-hidden">
+                    <p className="text-xs font-semibold truncate block w-full" title={doc.fileName || 'Document'}>
+                      {doc.fileName || 'Document'}
+                    </p>
                     {doc.fileSize && (
                       <p
-                        className={`text-[10px] mt-0.5 ${isOutgoing ? 'text-indigo-200' : 'text-slate-400 dark:text-slate-400'
+                        className={`text-[10px] mt-0.5 truncate ${isOutgoing ? 'text-indigo-200' : 'text-slate-400 dark:text-slate-400'
                           }`}
                       >
                         {formatFileSize(doc.fileSize)}
@@ -636,19 +640,36 @@ const MessageBubble = ({
                     )}
                   </div>
 
-                  <a
-                    href={doc.fileUrl}
-                    download={doc.fileName || 'document'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`p-2 rounded-lg transition-colors shrink-0 ${isOutgoing
-                      ? 'bg-white/15 hover:bg-white/25 text-white'
-                      : 'bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200'
-                      }`}
-                    title="Download file"
-                  >
-                    <Download size={14} />
-                  </a>
+                  {status === 'sending' ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCancelUpload?.();
+                      }}
+                      className={`p-2 rounded-lg transition-colors shrink-0 cursor-pointer ${isOutgoing
+                        ? 'bg-white/15 hover:bg-red-500/80 text-white'
+                        : 'bg-slate-200 dark:bg-slate-700 hover:bg-red-500/80 text-slate-700 dark:text-slate-200'
+                        }`}
+                      title="Cancel upload"
+                    >
+                      <Loader2 size={14} className="animate-spin" />
+                    </button>
+                  ) : (
+                    <a
+                      href={doc.fileUrl}
+                      download={doc.fileName || 'document'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`p-2 rounded-lg transition-colors shrink-0 ${isOutgoing
+                        ? 'bg-white/15 hover:bg-white/25 text-white'
+                        : 'bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200'
+                        }`}
+                      title="Download file"
+                    >
+                      <Download size={14} />
+                    </a>
+                  )}
                 </div>
               ))}
             </div>

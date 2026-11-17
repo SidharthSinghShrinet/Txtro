@@ -500,7 +500,7 @@ const MessageInput = ({
 
       {/* File Attachment Staging Preview Dock */}
       {selectedFiles.length > 0 && (
-        <div className="px-4 pt-2.5 pb-2 border-b border-slate-100 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/40">
+        <div className="px-3 sm:px-4 pt-2.5 pb-2 border-b border-slate-100 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/40 w-full min-w-0 overflow-hidden">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
               {selectedFiles.length} {selectedFiles.length === 1 ? 'file' : 'files'} selected
@@ -515,7 +515,7 @@ const MessageInput = ({
             </button>
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 max-h-32 flex-wrap">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 max-h-32 flex-nowrap sm:flex-wrap no-scrollbar">
             {selectedFiles.map((file, idx) => (
               <div
                 key={`${file.name}-${idx}`}
