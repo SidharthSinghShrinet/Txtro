@@ -34,6 +34,16 @@ function HomePage() {
     const abortUploadRef = useRef(null);
     const [draftsMap, setDraftsMap] = useState({});
     const draftDebounceRef = useRef(null);
+
+    // Refs for mobile browser & hardware back button synchronization
+    const selectedUserRef = useRef(selectedUser);
+    selectedUserRef.current = selectedUser;
+    const messageInputRef = useRef(messageInput);
+    messageInputRef.current = messageInput;
+    const selectedFilesRef = useRef(selectedFiles);
+    selectedFilesRef.current = selectedFiles;
+    const hasPushedChatStateRef = useRef(false);
+
     //All users
     const [users, setUsers] = useState([]);
 
@@ -106,6 +116,41 @@ function HomePage() {
     }, [selectedUser]);
 
 
+    // Unified cleanup & state restoration when returning to sidebar
+    const performCloseChat = () => {
+        const currentActiveUser = selectedUserRef.current;
+        if (currentActiveUser) {
+            const outgoingText = editingMessageRef.current ? (draftBeforeEditRef.current || "") : messageInputRef.current;
+            const outgoingFiles = selectedFilesRef.current;
+            saveDraftToStorage(currentActiveUser._id, outgoingText, outgoingFiles);
+            setDraftsMap((prev) => {
+                const hasDraft = Boolean(outgoingText?.trim()) || outgoingFiles?.length > 0;
+                if (!hasDraft) {
+                    const copy = { ...prev };
+                    delete copy[currentActiveUser._id];
+                    return copy;
+                }
+                return {
+                    ...prev,
+                    [currentActiveUser._id]: { text: outgoingText, files: outgoingFiles },
+                };
+            });
+        }
+
+        setSelectedUser(null);
+        setReplyingToMessage(null);
+        setEditingMessage(null);
+        editingMessageRef.current = null;
+        draftBeforeEditRef.current = '';
+        setIsTyping(false);
+        if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+        }
+        if (socket && currentActiveUser) {
+            socket.emit("stopTyping", { receiverId: currentActiveUser._id });
+        }
+    };
+
     // UI Handlers
     const handleSelectUser = (contact) => {
         // 1. Save active draft for previous contact before switching
@@ -125,6 +170,12 @@ function HomePage() {
                     [selectedUser._id]: { text: outgoingText, files: outgoingFiles },
                 };
             });
+        }
+
+        // Push mobile history state so Android hardware/gesture back button returns to sidebar instead of closing app
+        if (!hasPushedChatStateRef.current) {
+            window.history.pushState({ txtroChatOpen: true }, "");
+            hasPushedChatStateRef.current = true;
         }
 
         setSelectedUser(contact);
@@ -158,36 +209,29 @@ function HomePage() {
         );
     };
 
+    // In-app Back Arrow Click Handler (ChatHeader on mobile)
     const handleBackToSidebar = () => {
-        // Save current draft before going back on mobile
-        if (selectedUser) {
-            const outgoingText = editingMessageRef.current ? (draftBeforeEditRef.current || "") : messageInput;
-            const outgoingFiles = selectedFiles;
-            saveDraftToStorage(selectedUser._id, outgoingText, outgoingFiles);
-            setDraftsMap((prev) => {
-                const hasDraft = Boolean(outgoingText?.trim()) || outgoingFiles?.length > 0;
-                if (!hasDraft) {
-                    const copy = { ...prev };
-                    delete copy[selectedUser._id];
-                    return copy;
-                }
-                return {
-                    ...prev,
-                    [selectedUser._id]: { text: outgoingText, files: outgoingFiles },
-                };
-            });
-        }
-
-        setSelectedUser(null);
-        setReplyingToMessage(null);
-        setEditingMessage(null);
-        editingMessageRef.current = null;
-        draftBeforeEditRef.current = '';
-        setIsTyping(false);
-        if (typingTimeoutRef.current) {
-            clearTimeout(typingTimeoutRef.current);
+        if (hasPushedChatStateRef.current) {
+            hasPushedChatStateRef.current = false;
+            performCloseChat();
+            window.history.back();
+        } else {
+            performCloseChat();
         }
     };
+
+    // Listen for mobile browser & Android hardware/gesture back navigation
+    useEffect(() => {
+        const handlePopState = () => {
+            if (selectedUserRef.current) {
+                hasPushedChatStateRef.current = false;
+                performCloseChat();
+            }
+        };
+
+        window.addEventListener("popstate", handlePopState);
+        return () => window.removeEventListener("popstate", handlePopState);
+    }, []);
 
     // Handle typing debounce on input change
     const handleMessageInputChange = (e) => {
