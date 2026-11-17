@@ -4,6 +4,7 @@ import app from "./app.js";
 import connectDB from "./src/config/db.js";
 import http from "http";
 import { initSocket } from "./src/socket/socket.js";
+import { initSweeperJob } from "./src/utils/sweeper.util.js";
 
 const server = http.createServer(app);
 
@@ -26,5 +27,5 @@ const startConnection = async () => {
     process.exit(1);
   }
 };
-
+initSweeperJob();
 startConnection();

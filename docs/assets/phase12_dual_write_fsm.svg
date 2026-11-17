@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 460" width="100%" height="100%">
+  <defs>
+    <linearGradient id="dwBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f19"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1000" height="460" fill="url(#dwBg)" rx="16"/>
+  <rect x="1" y="1" width="998" height="458" fill="none" stroke="#1f2937" stroke-width="2" rx="15"/>
+
+  <!-- Title -->
+  <text x="500" y="42" fill="#f8fafc" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="bold" text-anchor="middle">Txtro Phase 12: The Distributed Deletion / Cloud Purge Dilemma</text>
+  <text x="500" y="65" fill="#94a3b8" font-family="system-ui, -apple-system, sans-serif" font-size="12" text-anchor="middle">Why Txtro Enforces the OCI-First Idempotent Purge Pattern Over Database-First Deletion</text>
+
+  <!-- Left Card: Database First (The Trap) -->
+  <g transform="translate(60, 100)">
+    <rect width="410" height="310" fill="#1f1315" stroke="#e11d48" stroke-width="1.5" rx="12"/>
+    <rect x="16" y="16" width="130" height="26" fill="#9f1239" rx="6"/>
+    <text x="81" y="33" fill="#ffffff" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">SCENARIO A (TRAP)</text>
+    <text x="155" y="34" fill="#fecdd3" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Database First, Then OCI</text>
+
+    <text x="20" y="75" fill="#fca5a5" font-family="system-ui, sans-serif" font-size="11" font-weight="bold">1. MongoDB Wipes attachments Array</text>
+    <text x="20" y="92" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">Document is updated: { attachments: [] }.</text>
+    <text x="20" y="106" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">The database loses all record of OCI object keys!</text>
+
+    <text x="20" y="140" fill="#fca5a5" font-family="system-ui, sans-serif" font-size="11" font-weight="bold">2. OCI Cloud Network Drop / Failure</text>
+    <text x="20" y="157" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">The network call to Oracle Cloud Object Storage fails.</text>
+    <text x="20" y="171" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">The physical media file remains stored on OCI forever!</text>
+
+    <text x="20" y="205" fill="#fca5a5" font-family="system-ui, sans-serif" font-size="11" font-weight="bold">💥 The Result: Permanent Orphaned Storage</text>
+    <text x="20" y="222" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">Retrying delete is impossible because DB URLs are gone.</text>
+    <text x="20" y="236" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">Orphaned cloud assets accumulate silent storage bills.</text>
+
+    <rect x="20" y="255" width="370" height="35" fill="#3b0d14" stroke="#e11d48" stroke-width="1" rx="6"/>
+    <text x="205" y="277" fill="#fca5a5" font-family="system-ui, sans-serif" font-size="10.5" font-weight="bold" text-anchor="middle">Verdict: Data Loss &amp; Orphaned Cloud Bills</text>
+  </g>
+
+  <!-- Right Card: OCI First (Txtro Standard) -->
+  <g transform="translate(530, 100)">
+    <rect width="410" height="310" fill="#06281e" stroke="#10b981" stroke-width="1.5" rx="12"/>
+    <rect x="16" y="16" width="130" height="26" fill="#047857" rx="6"/>
+    <text x="81" y="33" fill="#ffffff" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">SCENARIO B (TXTRO)</text>
+    <text x="155" y="34" fill="#a7f3d0" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">OCI First, Then Database CAS</text>
+
+    <text x="20" y="75" fill="#6ee7b7" font-family="system-ui, sans-serif" font-size="11" font-weight="bold">1. Physical Purge from OCI First</text>
+    <text x="20" y="92" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">deleteObjectsFromOCI(keysToDelete) executes.</text>
+    <text x="20" y="106" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">If OCI fails, DB is NOT touched; retry is 100% possible!</text>
+
+    <text x="20" y="140" fill="#6ee7b7" font-family="system-ui, sans-serif" font-size="11" font-weight="bold">2. S3/OCI Deletion is 100% Idempotent</text>
+    <text x="20" y="157" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">Deleting an already purged object returns HTTP 204.</text>
+    <text x="20" y="171" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">Zero crash risk on retries or duplicate network requests.</text>
+
+    <text x="20" y="205" fill="#6ee7b7" font-family="system-ui, sans-serif" font-size="11" font-weight="bold">3. Atomic CAS: isDeletedForEveryone: false</text>
+    <text x="20" y="222" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">Guarantees exactly one concurrent request flips the state.</text>
+    <text x="20" y="236" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">Wipes text and attachments from DB with zero leaks.</text>
+
+    <rect x="20" y="255" width="370" height="35" fill="#064e3b" stroke="#10b981" stroke-width="1" rx="6"/>
+    <text x="205" y="277" fill="#a7f3d0" font-family="system-ui, sans-serif" font-size="10.5" font-weight="bold" text-anchor="middle">Verdict: 100% Idempotent, Safe &amp; Clean Cloud</text>
+  </g>
+</svg>

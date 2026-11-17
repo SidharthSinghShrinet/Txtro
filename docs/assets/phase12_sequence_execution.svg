@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 860" width="100%" height="100%">
+  <defs>
+    <linearGradient id="seq12Bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f19"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <marker id="seq12Arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#6366f1"/>
+    </marker>
+    <marker id="seq12ArrowGreen" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#10b981"/>
+    </marker>
+    <marker id="seq12ArrowRose" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#f43f5e"/>
+    </marker>
+  </defs>
+
+  <rect width="1100" height="860" fill="url(#seq12Bg)" rx="16"/>
+  <rect x="1" y="1" width="1098" height="858" fill="none" stroke="#1f2937" stroke-width="2" rx="15"/>
+
+  <!-- Title -->
+  <text x="550" y="42" fill="#f8fafc" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="bold" text-anchor="middle">Txtro Phase 12: Dual Deletion Sequence &amp; Cloud Purge Map</text>
+  <text x="550" y="65" fill="#94a3b8" font-family="system-ui, -apple-system, sans-serif" font-size="12" text-anchor="middle">Modal Selection • 0ms Optimistic Tombstone • OCI Cloud Purge • Atomic CAS • Real-Time Broadcast</text>
+
+  <!-- Lifeline Headers -->
+  <!-- Col 1: Client A (Sender) -->
+  <rect x="50" y="85" width="130" height="42" fill="#1e1b4b" stroke="#6366f1" stroke-width="1.5" rx="8"/>
+  <text x="115" y="105" fill="#e0e7ff" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">Client A UI</text>
+  <text x="115" y="119" fill="#a5b4fc" font-family="system-ui, sans-serif" font-size="9.5" text-anchor="middle">(Sender)</text>
+  <line x1="115" y1="127" x2="115" y2="820" stroke="#312e81" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+  <!-- Col 2: Delete Modal -->
+  <rect x="230" y="85" width="130" height="42" fill="#064e3b" stroke="#10b981" stroke-width="1.5" rx="8"/>
+  <text x="295" y="105" fill="#d1fae5" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">Delete Modal</text>
+  <text x="295" y="119" fill="#6ee7b7" font-family="system-ui, sans-serif" font-size="9.5" text-anchor="middle">(ChatContainer)</text>
+  <line x1="295" y1="127" x2="295" y2="820" stroke="#065f46" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+  <!-- Col 3: Express API -->
+  <rect x="410" y="85" width="130" height="42" fill="#1e3a8a" stroke="#3b82f6" stroke-width="1.5" rx="8"/>
+  <text x="475" y="105" fill="#dbeafe" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">Node.js Express</text>
+  <text x="475" y="119" fill="#93c5fd" font-family="system-ui, sans-serif" font-size="9.5" text-anchor="middle">(Controllers)</text>
+  <line x1="475" y1="127" x2="475" y2="820" stroke="#1e40af" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+  <!-- Col 4: Oracle Cloud OCI -->
+  <rect x="590" y="85" width="130" height="42" fill="#831843" stroke="#f43f5e" stroke-width="1.5" rx="8"/>
+  <text x="655" y="105" fill="#ffe4e6" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">Oracle Cloud OCI</text>
+  <text x="655" y="119" fill="#fda4af" font-family="system-ui, sans-serif" font-size="9.5" text-anchor="middle">(Object Storage)</text>
+  <line x1="655" y1="127" x2="655" y2="820" stroke="#9f1239" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+  <!-- Col 5: MongoDB Atlas -->
+  <rect x="770" y="85" width="130" height="42" fill="#581c87" stroke="#a855f7" stroke-width="1.5" rx="8"/>
+  <text x="835" y="105" fill="#f3e8ff" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">MongoDB Atlas</text>
+  <text x="835" y="119" fill="#d8b4fe" font-family="system-ui, sans-serif" font-size="9.5" text-anchor="middle">(Atomic CAS)</text>
+  <line x1="835" y1="127" x2="835" y2="820" stroke="#6b21a8" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+  <!-- Col 6: Client B (Peer) -->
+  <rect x="940" y="85" width="120" height="42" fill="#1e1b4b" stroke="#6366f1" stroke-width="1.5" rx="8"/>
+  <text x="1000" y="105" fill="#e0e7ff" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">Client B (Peer)</text>
+  <text x="1000" y="119" fill="#a5b4fc" font-family="system-ui, sans-serif" font-size="9.5" text-anchor="middle">(Recipient)</text>
+  <line x1="1000" y1="127" x2="1000" y2="820" stroke="#312e81" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+  <!-- Step 1: User clicks trash -->
+  <line x1="115" y1="155" x2="295" y2="155" stroke="#6366f1" stroke-width="1.8" marker-end="url(#seq12Arrow)"/>
+  <text x="205" y="147" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="10.5" font-weight="bold" text-anchor="middle">1. Hover &amp; Click Trash</text>
+
+  <!-- Step 2: Modal displays choices -->
+  <rect x="250" y="170" width="90" height="36" fill="#065f46" rx="4"/>
+  <text x="295" y="186" fill="#a7f3d0" font-family="system-ui, sans-serif" font-size="9.5" font-weight="bold" text-anchor="middle">Mount Modal</text>
+  <text x="295" y="198" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="8.5" text-anchor="middle">Evaluate &lt;= 48h</text>
+
+  <!-- Step 3: User picks 'Delete for Everyone' -->
+  <line x1="295" y1="230" x2="115" y2="230" stroke="#10b981" stroke-width="1.8" marker-end="url(#seq12ArrowGreen)"/>
+  <text x="205" y="222" fill="#10b981" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">2. User selects &apos;Delete for Everyone&apos;</text>
+
+  <!-- Step 4: 0ms Optimistic Tombstone -->
+  <rect x="70" y="245" width="90" height="40" fill="#312e81" rx="4"/>
+  <text x="115" y="261" fill="#e0e7ff" font-family="system-ui, sans-serif" font-size="9.5" font-weight="bold" text-anchor="middle">0ms Tombstone</text>
+  <text x="115" y="275" fill="#a5b4fc" font-family="system-ui, sans-serif" font-size="8.5" text-anchor="middle">&quot;You deleted message&quot;</text>
+
+  <!-- Step 5: Network DELETE -->
+  <line x1="115" y1="305" x2="475" y2="305" stroke="#3b82f6" stroke-width="1.8" marker-end="url(#seq12Arrow)"/>
+  <text x="295" y="297" fill="#93c5fd" font-family="system-ui, sans-serif" font-size="10.5" font-weight="bold" text-anchor="middle">3. DELETE /delete-for-everyone/:id</text>
+
+  <!-- Step 6: Auth & Time check -->
+  <rect x="430" y="325" width="90" height="40" fill="#1e3a8a" rx="4"/>
+  <text x="475" y="341" fill="#dbeafe" font-family="system-ui, sans-serif" font-size="9.5" font-weight="bold" text-anchor="middle">Verify Sender</text>
+  <text x="475" y="355" fill="#93c5fd" font-family="system-ui, sans-serif" font-size="8.5" text-anchor="middle">Age &lt;= 48h Guard</text>
+
+  <!-- Step 7: OCI Cloud Purge First -->
+  <line x1="475" y1="390" x2="655" y2="390" stroke="#f43f5e" stroke-width="2" marker-end="url(#seq12ArrowRose)"/>
+  <text x="565" y="382" fill="#fca5a5" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">4. OCI FIRST: deleteObjectsFromOCI()</text>
+
+  <line x1="655" y1="425" x2="475" y2="425" stroke="#10b981" stroke-width="1.8" stroke-dasharray="3,3" marker-end="url(#seq12ArrowGreen)"/>
+  <text x="565" y="418" fill="#10b981" font-family="system-ui, sans-serif" font-size="9.5" text-anchor="middle">5. OCI Physical Purge Confirmed</text>
+
+  <!-- Step 8: Atomic CAS in Mongo -->
+  <line x1="475" y1="465" x2="835" y2="465" stroke="#a855f7" stroke-width="2" marker-end="url(#seq12Arrow)"/>
+  <text x="655" y="457" fill="#e9d5ff" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">6. CAS: findOneAndUpdate({ isDeletedForEveryone: false })</text>
+
+  <line x1="835" y1="500" x2="475" y2="500" stroke="#10b981" stroke-width="1.8" stroke-dasharray="3,3" marker-end="url(#seq12ArrowGreen)"/>
+  <text x="655" y="493" fill="#10b981" font-family="system-ui, sans-serif" font-size="9.5" text-anchor="middle">7. Wipe message &amp; attachments array</text>
+
+  <!-- Step 9: HTTP 200 response -->
+  <line x1="475" y1="535" x2="115" y2="535" stroke="#10b981" stroke-width="1.8" stroke-dasharray="3,3" marker-end="url(#seq12ArrowGreen)"/>
+  <text x="295" y="527" fill="#10b981" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">8. HTTP 200: Confirmed Tombstoned</text>
+
+  <!-- Step 10: Real-time broadcast -->
+  <line x1="475" y1="575" x2="1000" y2="575" stroke="#a855f7" stroke-width="2" marker-end="url(#seq12Arrow)"/>
+  <text x="737" y="567" fill="#e9d5ff" font-family="system-ui, sans-serif" font-size="10.5" font-weight="bold" text-anchor="middle">9. Socket.IO emit(&apos;messageDeleted&apos;, { type: &apos;everyone&apos; })</text>
+
+  <!-- Step 11: Peer paint tombstone -->
+  <rect x="955" y="590" width="90" height="40" fill="#312e81" rx="4"/>
+  <text x="1000" y="606" fill="#e0e7ff" font-family="system-ui, sans-serif" font-size="9.5" font-weight="bold" text-anchor="middle">Tombstone</text>
+  <text x="1000" y="620" fill="#a5b4fc" font-family="system-ui, sans-serif" font-size="8.5" text-anchor="middle">&quot;This message deleted&quot;</text>
+
+  <!-- Step 12: Delete for Me Sub-Flow Summary -->
+  <rect x="180" y="660" width="740" height="150" fill="#111827" stroke="#10b981" stroke-width="1.5" rx="10"/>
+  <text x="550" y="682" fill="#34d399" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">DELETE FOR ME (LOCAL ID EXCLUSION PIPELINE)</text>
+
+  <text x="210" y="715" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">• User selects &apos;Delete for Me&apos; ➔ messages.filter(m =&gt; m._id !== id) executes locally in &lt; 1ms</text>
+  <text x="210" y="735" fill="#6ee7b7" font-family="system-ui, sans-serif" font-size="10.5">  DELETE /api/v1/messages/delete-for-me/:id ➔ messageModel.findByIdAndUpdate(id, { $addToSet: { deletedFor: userId } })</text>
+
+  <text x="210" y="765" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">• Peer is NOT notified; message remains fully visible to partner client</text>
+  <text x="210" y="785" fill="#34d399" font-family="system-ui, sans-serif" font-size="10.5">  Subsequent getMessages query: { deletedFor: { $nin: [myId] } } ➔ 0 extra documents in DB!</text>
+</svg>

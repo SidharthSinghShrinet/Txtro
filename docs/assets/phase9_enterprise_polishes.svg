@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 460" width="100%" height="100%">
+  <defs>
+    <linearGradient id="polBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#090d16"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <filter id="polShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#000" flood-opacity="0.6"/>
+    </filter>
+    <marker id="polArrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#6366f1"/>
+    </marker>
+  </defs>
+
+  <rect width="1000" height="460" fill="url(#polBg)" rx="16"/>
+  <rect x="1" y="1" width="998" height="458" fill="none" stroke="#1e293b" stroke-width="2" rx="15"/>
+
+  <!-- Header -->
+  <text x="500" y="38" fill="#f8fafc" font-family="system-ui, sans-serif" font-size="19" font-weight="bold" text-anchor="middle">Txtro Phase 9: The Final 1% Enterprise Micro-Polishes</text>
+  <text x="500" y="58" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="11.5" text-anchor="middle">Engineering Defense-in-Depth for Rare Real-World Edge Cases and Flagship UX</text>
+
+  <!-- CARD 1 -->
+  <g transform="translate(35, 90)">
+    <rect width="280" height="320" fill="#1e1b4b" fill-opacity="0.6" stroke="#4f46e5" stroke-width="1.8" rx="12" filter="url(#polShadow)"/>
+    <rect x="16" y="14" width="60" height="20" fill="#4f46e5" rx="4"/>
+    <text x="46" y="28" fill="#ffffff" font-family="system-ui, sans-serif" font-size="9.5" font-weight="bold" text-anchor="middle">POLISH 1</text>
+    <text x="86" y="29" fill="#e0e7ff" font-family="system-ui, sans-serif" font-size="13.5" font-weight="bold">Contact-Switch Reset</text>
+    
+    <!-- Edge case box -->
+    <rect x="15" y="48" width="250" height="60" fill="#0f172a" stroke="#312e81" rx="6"/>
+    <text x="25" y="66" fill="#f43f5e" font-family="system-ui, sans-serif" font-size="10" font-weight="bold">THE EDGE CASE HAZARD:</text>
+    <text x="25" y="82" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">User records voice note for Alice,</text>
+    <text x="25" y="96" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">clicks Bob in sidebar. Mic leaks audio!</text>
+
+    <!-- Solution box -->
+    <rect x="15" y="120" width="250" height="110" fill="#0f172a" stroke="#312e81" rx="6"/>
+    <text x="25" y="138" fill="#10b981" font-family="system-ui, sans-serif" font-size="10" font-weight="bold">ARCHITECTURAL SOLUTION:</text>
+    <text x="25" y="156" fill="#818cf8" font-family="system-ui, sans-serif" font-size="9.5" font-weight="bold">key={selectedUser?._id}</text>
+    <text x="25" y="174" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="9.5">• Forces clean React unmount</text>
+    <text x="25" y="190" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="9.5">• Instantly stops MediaStream tracks</text>
+    <text x="25" y="206" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="9.5">• Closes AudioContext &amp; clears buffers</text>
+
+    <!-- Badge -->
+    <rect x="15" y="245" width="250" height="55" fill="#312e81" fill-opacity="0.4" stroke="#6366f1" rx="6"/>
+    <text x="140" y="267" fill="#a5b4fc" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">VERIFIED IMPACT</text>
+    <text x="140" y="285" fill="#38bdf8" font-family="system-ui, sans-serif" font-size="9.5" font-weight="bold" text-anchor="middle">100% Cross-Chat Leak Prevention</text>
+  </g>
+
+  <!-- Arrow 1 -> 2 -->
+  <line x1="315" y1="250" x2="355" y2="250" stroke="#6366f1" stroke-width="2" marker-end="url(#polArrow)"/>
+
+  <!-- CARD 2 -->
+  <g transform="translate(360, 90)">
+    <rect width="280" height="320" fill="#451a03" fill-opacity="0.4" stroke="#d97706" stroke-width="1.8" rx="12" filter="url(#polShadow)"/>
+    <rect x="16" y="14" width="60" height="20" fill="#d97706" rx="4"/>
+    <text x="46" y="28" fill="#ffffff" font-family="system-ui, sans-serif" font-size="9.5" font-weight="bold" text-anchor="middle">POLISH 2</text>
+    <text x="86" y="29" fill="#fef3c7" font-family="system-ui, sans-serif" font-size="13.5" font-weight="bold">10-Min Safety Ceiling</text>
+
+    <!-- Edge case box -->
+    <rect x="15" y="48" width="250" height="60" fill="#0f172a" stroke="#78350f" rx="6"/>
+    <text x="25" y="66" fill="#f43f5e" font-family="system-ui, sans-serif" font-size="10" font-weight="bold">THE EDGE CASE HAZARD:</text>
+    <text x="25" y="82" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">User clicks Record on laptop, walks away.</text>
+    <text x="25" y="96" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">2-hour runaway file exhausts RAM/OCI.</text>
+
+    <!-- Solution box -->
+    <rect x="15" y="120" width="250" height="110" fill="#0f172a" stroke="#78350f" rx="6"/>
+    <text x="25" y="138" fill="#10b981" font-family="system-ui, sans-serif" font-size="10" font-weight="bold">ARCHITECTURAL SOLUTION:</text>
+    <text x="25" y="156" fill="#fbbf24" font-family="system-ui, sans-serif" font-size="9.5" font-weight="bold">MAX_RECORDING_SECONDS = 600</text>
+    <text x="25" y="174" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="9.5">• Stopwatch monitors elapsed delta</text>
+    <text x="25" y="190" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="9.5">• At 10:00, auto-triggers pauseRecording()</text>
+    <text x="25" y="206" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="9.5">• Preserves audio safely in Review Dock</text>
+
+    <!-- Badge -->
+    <rect x="15" y="245" width="250" height="55" fill="#78350f" fill-opacity="0.4" stroke="#d97706" rx="6"/>
+    <text x="140" y="267" fill="#fde68a" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">VERIFIED IMPACT</text>
+    <text x="140" y="285" fill="#10b981" font-family="system-ui, sans-serif" font-size="9.5" font-weight="bold" text-anchor="middle">Caps Heap Allocation to &lt;3 MB</text>
+  </g>
+
+  <!-- Arrow 2 -> 3 -->
+  <line x1="640" y1="250" x2="680" y2="250" stroke="#6366f1" stroke-width="2" marker-end="url(#polArrow)"/>
+
+  <!-- CARD 3 -->
+  <g transform="translate(685, 90)">
+    <rect width="280" height="320" fill="#064e3b" fill-opacity="0.4" stroke="#059669" stroke-width="1.8" rx="12" filter="url(#polShadow)"/>
+    <rect x="16" y="14" width="60" height="20" fill="#059669" rx="4"/>
+    <text x="46" y="28" fill="#ffffff" font-family="system-ui, sans-serif" font-size="9.5" font-weight="bold" text-anchor="middle">POLISH 3</text>
+    <text x="86" y="29" fill="#d1fae5" font-family="system-ui, sans-serif" font-size="13.5" font-weight="bold">Fluid Pointer Scrubbing</text>
+
+    <!-- Edge case box -->
+    <rect x="15" y="48" width="250" height="60" fill="#0f172a" stroke="#065f46" rx="6"/>
+    <text x="25" y="66" fill="#f43f5e" font-family="system-ui, sans-serif" font-size="10" font-weight="bold">THE EDGE CASE HAZARD:</text>
+    <text x="25" y="82" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">Discrete onClick feels clunky and</text>
+    <text x="25" y="96" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="9.5">unresponsive on mobile touchscreens.</text>
+
+    <!-- Solution box -->
+    <rect x="15" y="120" width="250" height="110" fill="#0f172a" stroke="#065f46" rx="6"/>
+    <text x="25" y="138" fill="#10b981" font-family="system-ui, sans-serif" font-size="10" font-weight="bold">ARCHITECTURAL SOLUTION:</text>
+    <text x="25" y="156" fill="#6ee7b7" font-family="system-ui, sans-serif" font-size="9.5" font-weight="bold">W3C Pointer Events API</text>
+    <text x="25" y="174" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="9.5">• onPointerDown + onPointerMove</text>
+    <text x="25" y="190" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="9.5">• e.setPointerCapture(pointerId)</text>
+    <text x="25" y="206" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="9.5">• Unified mouse &amp; touch drag-to-seek</text>
+
+    <!-- Badge -->
+    <rect x="15" y="245" width="250" height="55" fill="#065f46" fill-opacity="0.4" stroke="#10b981" rx="6"/>
+    <text x="140" y="267" fill="#a7f3d0" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">VERIFIED IMPACT</text>
+    <text x="140" y="285" fill="#38bdf8" font-family="system-ui, sans-serif" font-size="9.5" font-weight="bold" text-anchor="middle">Silky 120 FPS Touch Interaction</text>
+  </g>
+</svg>

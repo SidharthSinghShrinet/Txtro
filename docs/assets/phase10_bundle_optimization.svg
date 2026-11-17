@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 460" width="100%" height="100%">
+  <defs>
+    <linearGradient id="optBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f19"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <marker id="optArrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#6366f1"/>
+    </marker>
+  </defs>
+
+  <rect width="1000" height="460" fill="url(#optBg)" rx="16"/>
+  <rect x="1" y="1" width="998" height="458" fill="none" stroke="#1f2937" stroke-width="2" rx="15"/>
+
+  <!-- Title -->
+  <text x="500" y="42" fill="#f8fafc" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="bold" text-anchor="middle">Txtro Phase 10: Zero-Bundle Code Splitting &amp; Hover Prefetch Highway</text>
+  <text x="500" y="65" fill="#94a3b8" font-family="system-ui, -apple-system, sans-serif" font-size="12" text-anchor="middle">How Txtro Ships a 3,600+ Emoji Library with 0 KB Initial Bundle Penalty &amp; 0ms Cold Start</text>
+
+  <!-- Step 1 Card -->
+  <g transform="translate(50, 100)">
+    <rect width="250" height="280" fill="#1e1b4b" stroke="#6366f1" stroke-width="1.5" rx="12"/>
+    <rect x="16" y="16" width="36" height="36" fill="#4f46e5" rx="8"/>
+    <text x="34" y="40" fill="#ffffff" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" text-anchor="middle">1</text>
+    <text x="64" y="32" fill="#e0e7ff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Initial Page Load</text>
+    <text x="64" y="46" fill="#10b981" font-family="system-ui, sans-serif" font-size="11" font-weight="bold">0 KB Footprint</text>
+
+    <text x="20" y="85" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11" font-weight="bold">• React.lazy() Isolation</text>
+    <text x="20" y="105" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">emoji-picker-react is decoupled</text>
+    <text x="20" y="120" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">from main vendor.js chunk.</text>
+
+    <text x="20" y="150" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11" font-weight="bold">• 0ms First Contentful Paint</text>
+    <text x="20" y="170" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">Mobile and desktop users download</text>
+    <text x="20" y="185" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">zero emoji bytes during boot.</text>
+
+    <rect x="20" y="215" width="210" height="42" fill="#312e81" rx="6"/>
+    <text x="125" y="235" fill="#e0e7ff" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">Initial Bundle Penalty</text>
+    <text x="125" y="249" fill="#10b981" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">EXACTLY 0 KB</text>
+  </g>
+
+  <!-- Arrow 1 -> 2 -->
+  <line x1="300" y1="240" x2="365" y2="240" stroke="#6366f1" stroke-width="2.5" marker-end="url(#optArrow)"/>
+
+  <!-- Step 2 Card -->
+  <g transform="translate(375, 100)">
+    <rect width="250" height="280" fill="#064e3b" stroke="#10b981" stroke-width="1.5" rx="12"/>
+    <rect x="16" y="16" width="36" height="36" fill="#10b981" rx="8"/>
+    <text x="34" y="40" fill="#ffffff" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" text-anchor="middle">2</text>
+    <text x="64" y="32" fill="#d1fae5" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Hover Prefetching</text>
+    <text x="64" y="46" fill="#6ee7b7" font-family="system-ui, sans-serif" font-size="11" font-weight="bold">200ms Head Start</text>
+
+    <text x="20" y="85" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11" font-weight="bold">• onMouseEnter Prefetch</text>
+    <text x="20" y="105" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">User hovers over smile 😊 button</text>
+    <text x="20" y="120" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">or &apos;+&apos; icon in reaction dock.</text>
+
+    <text x="20" y="150" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11" font-weight="bold">• Background Dynamic Import</text>
+    <text x="20" y="170" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">Browser fetches emoji chunk into</text>
+    <text x="20" y="185" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">HTTP cache before click occurs.</text>
+
+    <rect x="20" y="215" width="210" height="42" fill="#065f46" rx="6"/>
+    <text x="125" y="235" fill="#d1fae5" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">Perceived Opening Lag</text>
+    <text x="125" y="249" fill="#6ee7b7" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">0 ms (Pre-cached)</text>
+  </g>
+
+  <!-- Arrow 2 -> 3 -->
+  <line x1="625" y1="240" x2="690" y2="240" stroke="#10b981" stroke-width="2.5" marker-end="url(#optArrow)"/>
+
+  <!-- Step 3 Card -->
+  <g transform="translate(700, 100)">
+    <rect width="250" height="280" fill="#1e3a8a" stroke="#3b82f6" stroke-width="1.5" rx="12"/>
+    <rect x="16" y="16" width="36" height="36" fill="#3b82f6" rx="8"/>
+    <text x="34" y="40" fill="#ffffff" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" text-anchor="middle">3</text>
+    <text x="64" y="32" fill="#dbeafe" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Unmount-on-Close</text>
+    <text x="64" y="46" fill="#93c5fd" font-family="system-ui, sans-serif" font-size="11" font-weight="bold">Zero RAM Leaks</text>
+
+    <text x="20" y="85" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11" font-weight="bold">• Full Memory Teardown</text>
+    <text x="20" y="105" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">Closing popover completely</text>
+    <text x="20" y="120" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">unmounts DOM nodes from tree.</text>
+
+    <text x="20" y="150" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11" font-weight="bold">• V8 Garbage Collection</text>
+    <text x="20" y="170" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">Emoji dataset and search indices</text>
+    <text x="20" y="185" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">are reclaimed by browser GC.</text>
+
+    <rect x="20" y="215" width="210" height="42" fill="#1e40af" rx="6"/>
+    <text x="125" y="235" fill="#dbeafe" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">Idle Heap Consumption</text>
+    <text x="125" y="249" fill="#93c5fd" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">0 MB Retained</text>
+  </g>
+</svg>

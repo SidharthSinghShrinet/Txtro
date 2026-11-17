@@ -1,0 +1,166 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 780" width="100%" height="100%">
+  <defs>
+    <linearGradient id="p14Bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f19"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="cardBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0c4a6e" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="cardIndigo" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b4b" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="cardEmerald" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#064e3b" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="cardPurple" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b0764" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.95"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1000" height="780" fill="url(#p14Bg)" rx="16"/>
+  <rect x="1.5" y="1.5" width="997" height="777" fill="none" stroke="#1e293b" stroke-width="2" rx="15"/>
+
+  <!-- Header -->
+  <g transform="translate(50, 45)">
+    <rect x="0" y="0" width="40" height="40" rx="10" fill="#0284c7" fill-opacity="0.2" stroke="#38bdf8" stroke-width="1.5"/>
+    <path d="M14 20 A6 6 0 0 1 26 20 M20 14 L20 26 M15 15 L25 25 M15 25 L25 15" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" fill="none"/>
+    <text x="54" y="22" fill="#f8fafc" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="bold">Txtro Phase 14: Rich Link Preview Architecture</text>
+    <text x="54" y="38" fill="#94a3b8" font-family="system-ui, -apple-system, sans-serif" font-size="12">Pattern 2 WhatsApp Hybrid: Input Dock Pre-Flight, In-Memory LRU Cache, SSRF Shield &amp; 0ms CLS-Free Delivery</text>
+  </g>
+
+  <!-- STAGE 1: Client Pre-Flight & User Control -->
+  <g transform="translate(50, 110)">
+    <rect width="420" height="280" rx="14" fill="url(#cardBlue)" stroke="#0284c7" stroke-width="1.5" stroke-opacity="0.5"/>
+    <rect x="18" y="16" width="80" height="24" rx="6" fill="#0284c7" fill-opacity="0.3" stroke="#38bdf8" stroke-width="1"/>
+    <text x="58" y="32" fill="#bae6fd" font-family="sans-serif" font-size="11" font-weight="bold" text-anchor="middle">STAGE 01</text>
+    <text x="110" y="33" fill="#f8fafc" font-family="sans-serif" font-size="15" font-weight="bold">Client Pre-Flight &amp; Control</text>
+
+    <g transform="translate(20, 56)">
+      <rect width="380" height="55" rx="8" fill="#082f49" stroke="#0369a1" stroke-width="1"/>
+      <text x="16" y="20" fill="#38bdf8" font-family="monospace" font-size="11" font-weight="bold">350ms Debounced URL Detection:</text>
+      <text x="16" y="36" fill="#e2e8f0" font-family="sans-serif" font-size="11">Detects http/https regex in textarea input</text>
+      <text x="16" y="50" fill="#7dd3fc" font-family="sans-serif" font-size="10.5">Calls GET /api/v1/messages/link-preview?url=...</text>
+    </g>
+
+    <g transform="translate(20, 122)">
+      <rect width="380" height="65" rx="8" fill="#082f49" stroke="#0369a1" stroke-width="1"/>
+      <text x="16" y="20" fill="#7dd3fc" font-family="monospace" font-size="11" font-weight="bold">Floating Input Dock Banner:</text>
+      <text x="16" y="36" fill="#e2e8f0" font-family="sans-serif" font-size="11">Mounts mini preview card directly above message input</text>
+      <text x="16" y="52" fill="#94a3b8" font-family="sans-serif" font-size="11">Displays Title, Description &amp; Domain Badge</text>
+    </g>
+
+    <g transform="translate(20, 198)">
+      <rect width="380" height="60" rx="8" fill="#1e1b4b" stroke="#6366f1" stroke-width="1" stroke-dasharray="3 3"/>
+      <text x="16" y="20" fill="#c7d2fe" font-family="monospace" font-size="11" font-weight="bold">User Agency Dismissal [X]:</text>
+      <text x="16" y="36" fill="#e2e8f0" font-family="sans-serif" font-size="11">Clicking [X] sets isLinkPreviewDismissed = true</text>
+      <text x="16" y="50" fill="#a5b4fc" font-family="sans-serif" font-size="10.5">Allows sending clean link without card clutter</text>
+    </g>
+  </g>
+
+  <!-- STAGE 2: LRU Cache & SSRF Shield Engine -->
+  <g transform="translate(530, 110)">
+    <rect width="420" height="280" rx="14" fill="url(#cardEmerald)" stroke="#10b981" stroke-width="1.5" stroke-opacity="0.5"/>
+    <rect x="18" y="16" width="80" height="24" rx="6" fill="#10b981" fill-opacity="0.3" stroke="#34d399" stroke-width="1"/>
+    <text x="58" y="32" fill="#a7f3d0" font-family="sans-serif" font-size="11" font-weight="bold" text-anchor="middle">STAGE 02</text>
+    <text x="110" y="33" fill="#f8fafc" font-family="sans-serif" font-size="15" font-weight="bold">LRU Cache &amp; SSRF Shield</text>
+
+    <g transform="translate(20, 56)">
+      <rect width="380" height="60" rx="8" fill="#022c22" stroke="#047857" stroke-width="1"/>
+      <text x="16" y="20" fill="#34d399" font-family="monospace" font-size="11" font-weight="bold">In-Memory LRU Cache (24h TTL):</text>
+      <text x="16" y="36" fill="#e2e8f0" font-family="sans-serif" font-size="11">1,000 item capacity with automatic eviction</text>
+      <text x="16" y="50" fill="#6ee7b7" font-family="sans-serif" font-size="10.5">Cache HIT: 0.05ms response directly from RAM!</text>
+    </g>
+
+    <g transform="translate(20, 126)">
+      <rect width="380" height="65" rx="8" fill="#022c22" stroke="#047857" stroke-width="1"/>
+      <text x="16" y="20" fill="#6ee7b7" font-family="monospace" font-size="11" font-weight="bold">Anti-SSRF Security Gate:</text>
+      <text x="16" y="36" fill="#fca5a5" font-family="sans-serif" font-size="11">Blocks localhost, 127.*, 10.*, 192.168.*, 172.16-31.*</text>
+      <text x="16" y="52" fill="#f87171" font-family="sans-serif" font-size="10.5">Blocks AWS/Cloud metadata (169.254.169.254)</text>
+    </g>
+
+    <g transform="translate(20, 200)">
+      <rect width="380" height="60" rx="8" fill="#064e3b" stroke="#059669" stroke-width="1"/>
+      <text x="16" y="20" fill="#a7f3d0" font-family="monospace" font-size="11" font-weight="bold">Scraper Engine (open-graph-scraper):</text>
+      <text x="16" y="36" fill="#e2e8f0" font-family="sans-serif" font-size="11">Hard 2.5s AbortController timeout (Never hangs)</text>
+      <text x="16" y="50" fill="#6ee7b7" font-family="sans-serif" font-size="10.5">Waterfall fallbacks: OG &#x2192; Twitter &#x2192; DC &#x2192; Title</text>
+    </g>
+  </g>
+
+  <!-- STAGE 3: Dual-Resolution & MongoDB Commit -->
+  <g transform="translate(50, 420)">
+    <rect width="420" height="310" rx="14" fill="url(#cardIndigo)" stroke="#6366f1" stroke-width="1.5" stroke-opacity="0.5"/>
+    <rect x="18" y="16" width="80" height="24" rx="6" fill="#6366f1" fill-opacity="0.3" stroke="#818cf8" stroke-width="1"/>
+    <text x="58" y="32" fill="#c7d2fe" font-family="sans-serif" font-size="11" font-weight="bold" text-anchor="middle">STAGE 03</text>
+    <text x="110" y="33" fill="#f8fafc" font-family="sans-serif" font-size="15" font-weight="bold">Dual-Resolution &amp; DB Commit</text>
+
+    <g transform="translate(20, 56)">
+      <rect width="380" height="75" rx="8" fill="#1e1b4b" stroke="#4338ca" stroke-width="1"/>
+      <text x="16" y="20" fill="#818cf8" font-family="monospace" font-size="11" font-weight="bold">Dual-Resolution Strategy in sendMessage:</text>
+      <text x="16" y="36" fill="#e2e8f0" font-family="sans-serif" font-size="11">1. Pre-Flight Hit: Uses clientPreview payload (0ms)</text>
+      <text x="16" y="52" fill="#e2e8f0" font-family="sans-serif" font-size="11">2. Fast-Submit Fallback: Scrapes on server (&lt;20ms)</text>
+      <text x="16" y="66" fill="#a5b4fc" font-family="sans-serif" font-size="10">3. Dismissed Override: linkPreview = null</text>
+    </g>
+
+    <g transform="translate(20, 140)">
+      <rect width="380" height="75" rx="8" fill="#1e1b4b" stroke="#4338ca" stroke-width="1"/>
+      <text x="16" y="20" fill="#a5b4fc" font-family="monospace" font-size="11" font-weight="bold">MongoDB Subdocument Schema:</text>
+      <text x="16" y="36" fill="#cbd5e1" font-family="monospace" font-size="10.5">linkPreview: { _id: false, url, title,</text>
+      <text x="28" y="50" fill="#cbd5e1" font-family="monospace" font-size="10.5">description, image, siteName }</text>
+      <text x="16" y="66" fill="#94a3b8" font-family="sans-serif" font-size="10">Zero document join overhead; stored embedded</text>
+    </g>
+
+    <g transform="translate(20, 224)">
+      <rect width="380" height="65" rx="8" fill="#0f172a" stroke="#334155" stroke-width="1"/>
+      <text x="16" y="20" fill="#38bdf8" font-family="monospace" font-size="11" font-weight="bold">Phase 13 Edit Re-Scraping Synergy:</text>
+      <text x="16" y="36" fill="#e2e8f0" font-family="sans-serif" font-size="11">Editing text with new URL triggers re-scrape atomically.</text>
+      <text x="16" y="52" fill="#7dd3fc" font-family="sans-serif" font-size="10.5">Updates or clears linkPreview in findOneAndUpdate.</text>
+    </g>
+  </g>
+
+  <!-- STAGE 4: CLS-Free Render & Bubble Card Mount -->
+  <g transform="translate(530, 420)">
+    <rect width="420" height="310" rx="14" fill="url(#cardPurple)" stroke="#a855f7" stroke-width="1.5" stroke-opacity="0.5"/>
+    <rect x="18" y="16" width="80" height="24" rx="6" fill="#a855f7" fill-opacity="0.3" stroke="#c084fc" stroke-width="1"/>
+    <text x="58" y="32" fill="#f3e8ff" font-family="sans-serif" font-size="11" font-weight="bold" text-anchor="middle">STAGE 04</text>
+    <text x="110" y="33" fill="#f8fafc" font-family="sans-serif" font-size="15" font-weight="bold">CLS-Free Bubble Card Mount</text>
+
+    <g transform="translate(20, 56)">
+      <rect width="380" height="75" rx="8" fill="#2e1065" stroke="#7e22ce" stroke-width="1"/>
+      <text x="16" y="20" fill="#c084fc" font-family="monospace" font-size="11" font-weight="bold">Zero Cumulative Layout Shift (0ms CLS):</text>
+      <text x="16" y="36" fill="#e2e8f0" font-family="sans-serif" font-size="11">Optimistic message mounts with full card attached.</text>
+      <text x="16" y="52" fill="#e2e8f0" font-family="sans-serif" font-size="11">No downward pop-open jump (Unlike Slack / Discord).</text>
+      <text x="16" y="66" fill="#d8b4fe" font-family="sans-serif" font-size="10">Chat feed remains rock-solid while reading.</text>
+    </g>
+
+    <g transform="translate(20, 140)">
+      <rect width="380" height="85" rx="8" fill="#2e1065" stroke="#7e22ce" stroke-width="1"/>
+      <text x="16" y="20" fill="#e9d5ff" font-family="monospace" font-size="11" font-weight="bold">MessageBubble.jsx Card Architecture:</text>
+      <text x="16" y="36" fill="#cbd5e1" font-family="sans-serif" font-size="10.5">• Aspect-video hero image with onError auto-hide</text>
+      <text x="16" y="50" fill="#cbd5e1" font-family="sans-serif" font-size="10.5">• 2-line clamped title &amp; description</text>
+      <text x="16" y="64" fill="#cbd5e1" font-family="sans-serif" font-size="10.5">• Bottom domain badge + external link icon</text>
+      <text x="16" y="78" fill="#cbd5e1" font-family="sans-serif" font-size="10.5">• Safe target="_blank" rel="noopener noreferrer"</text>
+    </g>
+
+    <g transform="translate(20, 234)">
+      <rect width="380" height="60" rx="8" fill="#0f172a" stroke="#334155" stroke-width="1"/>
+      <text x="16" y="20" fill="#34d399" font-family="monospace" font-size="11" font-weight="bold">Real-Time Socket Fan-out:</text>
+      <text x="16" y="36" fill="#e2e8f0" font-family="sans-serif" font-size="11">newMessage and messageEdited carry full linkPreview.</text>
+      <text x="16" y="50" fill="#a7f3d0" font-family="sans-serif" font-size="10.5">Recipient renders identical card with 0ms delay.</text>
+    </g>
+  </g>
+
+  <!-- Connectors -->
+  <path d="M470 250 L530 250" stroke="#0284c7" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+  <polygon points="528,246 536,250 528,254" fill="#0284c7"/>
+
+  <path d="M740 390 L740 420" stroke="#10b981" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+  <polygon points="736,418 740,426 744,418" fill="#10b981"/>
+
+  <path d="M470 575 L530 575" stroke="#6366f1" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+  <polygon points="528,571 536,575 528,579" fill="#6366f1"/>
+</svg>

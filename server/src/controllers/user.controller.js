@@ -133,7 +133,7 @@ const getAllUsersWithMetadata = expressAsyncHandler(async (req, res, next) => {
       .find({ participants: loggedInUserId })
       .populate({
         path: "lastMessage",
-        select: "message senderId receiverId createdAt status"
+        select: "message senderId receiverId createdAt status messageType attachments"
       })
       .select("participants lastMessage updatedAt")
       .lean(),

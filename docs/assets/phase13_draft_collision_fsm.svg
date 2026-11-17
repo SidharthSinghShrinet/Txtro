@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 620" width="100%" height="100%">
+  <defs>
+    <linearGradient id="p13DraftBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f19"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="fsmCard" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b4b" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.95"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1000" height="620" fill="url(#p13DraftBg)" rx="16"/>
+  <rect x="1.5" y="1.5" width="997" height="617" fill="none" stroke="#1e293b" stroke-width="2" rx="15"/>
+
+  <!-- Title -->
+  <g transform="translate(50, 45)">
+    <text x="0" y="0" fill="#f8fafc" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="bold">Draft Auto-Save Collision &amp; Edit Isolation Finite State Machine</text>
+    <text x="0" y="20" fill="#94a3b8" font-family="sans-serif" font-size="12">Lifecycle of draftBeforeEditRef, editingMessageRef, and IndexedDB draft state preservation</text>
+  </g>
+
+  <!-- State 1: IDLE / COMPOSING DRAFT -->
+  <g transform="translate(60, 130)">
+    <rect width="250" height="160" rx="12" fill="url(#fsmCard)" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="20" y="30" fill="#60a5fa" font-family="sans-serif" font-size="13" font-weight="bold">STATE 1: Standard Composing</text>
+    <text x="20" y="55" fill="#e2e8f0" font-family="sans-serif" font-size="11">• User types in input bar</text>
+    <text x="20" y="75" fill="#e2e8f0" font-family="sans-serif" font-size="11">• Debounce timer (300ms)</text>
+    <text x="20" y="95" fill="#e2e8f0" font-family="sans-serif" font-size="11">• Auto-saves to IndexedDB</text>
+    <text x="20" y="115" fill="#93c5fd" font-family="sans-serif" font-size="11">• Sidebar shows &apos;Draft: ...&apos;</text>
+    <text x="20" y="140" fill="#64748b" font-family="monospace" font-size="10">editingMessageRef: null</text>
+  </g>
+
+  <!-- Transition 1 -> 2 -->
+  <g transform="translate(310, 190)">
+    <path d="M0 20 L70 20" stroke="#818cf8" stroke-width="2" fill="none"/>
+    <polygon points="68,16 76,20 68,24" fill="#818cf8"/>
+    <rect x="5" y="-12" width="60" height="24" rx="4" fill="#0f172a" stroke="#475569" stroke-width="0.75"/>
+    <text x="35" y="4" fill="#c7d2fe" font-family="sans-serif" font-size="9" text-anchor="middle">Tap ✏️ Edit</text>
+  </g>
+
+  <!-- State 2: EDITING ACTIVE (ISOLATION) -->
+  <g transform="translate(380, 110)">
+    <rect width="270" height="200" rx="12" fill="url(#fsmCard)" stroke="#818cf8" stroke-width="2"/>
+    <rect x="18" y="14" width="70" height="20" rx="4" fill="#4f46e5" fill-opacity="0.4"/>
+    <text x="53" y="28" fill="#c7d2fe" font-family="sans-serif" font-size="10" font-weight="bold" text-anchor="middle">ISOLATION</text>
+    <text x="96" y="29" fill="#f8fafc" font-family="sans-serif" font-size="13" font-weight="bold">STATE 2: Active Edit Mode</text>
+    
+    <text x="20" y="58" fill="#e2e8f0" font-family="sans-serif" font-size="11">• draftBeforeEditRef = currentInput</text>
+    <text x="20" y="78" fill="#e2e8f0" font-family="sans-serif" font-size="11">• editingMessageRef = targetMessage</text>
+    <text x="20" y="98" fill="#f87171" font-family="sans-serif" font-size="11" font-weight="bold">• DRAFT AUTO-SAVE BYPASSED!</text>
+    <text x="20" y="118" fill="#94a3b8" font-family="sans-serif" font-size="10.5">  (No writes to IndexedDB drafts)</text>
+    <text x="20" y="138" fill="#cbd5e1" font-family="sans-serif" font-size="11">• Mounts Floating Edit Banner</text>
+    <text x="20" y="158" fill="#cbd5e1" font-family="sans-serif" font-size="11">• Fills textarea with msg.message</text>
+    <text x="20" y="180" fill="#a5b4fc" font-family="sans-serif" font-size="10">Sidebar retains actual draft status</text>
+  </g>
+
+  <!-- Transition 2 -> 3 (Submit) -->
+  <g transform="translate(650, 160)">
+    <path d="M0 20 L70 20" stroke="#10b981" stroke-width="2" fill="none"/>
+    <polygon points="68,16 76,20 68,24" fill="#10b981"/>
+    <rect x="5" y="-12" width="60" height="24" rx="4" fill="#0f172a" stroke="#475569" stroke-width="0.75"/>
+    <text x="35" y="4" fill="#a7f3d0" font-family="sans-serif" font-size="9" text-anchor="middle">Tap &#x2705; Send</text>
+  </g>
+
+  <!-- State 3: RESTORAL & SUBMIT -->
+  <g transform="translate(720, 130)">
+    <rect width="240" height="160" rx="12" fill="url(#fsmCard)" stroke="#10b981" stroke-width="1.5"/>
+    <text x="20" y="30" fill="#34d399" font-family="sans-serif" font-size="13" font-weight="bold">STATE 3: Restoral &amp; Sync</text>
+    <text x="20" y="55" fill="#e2e8f0" font-family="sans-serif" font-size="11">• 0ms Optimistic bubble update</text>
+    <text x="20" y="75" fill="#e2e8f0" font-family="sans-serif" font-size="11">• editingMessageRef = null</text>
+    <text x="20" y="95" fill="#6ee7b7" font-family="sans-serif" font-size="11">• Prior draft restored to input</text>
+    <text x="20" y="115" fill="#6ee7b7" font-family="sans-serif" font-size="11">• If no prior draft: IndexedDB wiped</text>
+    <text x="20" y="140" fill="#a7f3d0" font-family="monospace" font-size="10">Zero draft leakage to sidebar!</text>
+  </g>
+
+  <!-- Transition 2 -> Cancel (Down) -->
+  <g transform="translate(480, 310)">
+    <path d="M35 0 L35 70" stroke="#f59e0b" stroke-width="2" fill="none"/>
+    <polygon points="31,68 35,76 39,68" fill="#f59e0b"/>
+    <rect x="-30" y="25" width="130" height="20" rx="4" fill="#0f172a" stroke="#475569" stroke-width="0.75"/>
+    <text x="35" y="39" fill="#fde68a" font-family="sans-serif" font-size="9.5" text-anchor="middle">Esc / Tap &#x2715; (Cancel)</text>
+  </g>
+
+  <!-- State 4: CANCEL / ABORT -->
+  <g transform="translate(380, 390)">
+    <rect width="270" height="160" rx="12" fill="url(#fsmCard)" stroke="#f59e0b" stroke-width="1.5"/>
+    <text x="20" y="30" fill="#fbbf24" font-family="sans-serif" font-size="13" font-weight="bold">STATE 4: Graceful Cancel</text>
+    <text x="20" y="55" fill="#e2e8f0" font-family="sans-serif" font-size="11">• Unmounts Edit Banner</text>
+    <text x="20" y="75" fill="#e2e8f0" font-family="sans-serif" font-size="11">• Restores draftBeforeEditRef</text>
+    <text x="20" y="95" fill="#e2e8f0" font-family="sans-serif" font-size="11">• Re-enables draft auto-save</text>
+    <text x="20" y="115" fill="#e2e8f0" font-family="sans-serif" font-size="11">• Restores textarea content</text>
+    <text x="20" y="140" fill="#fde68a" font-family="monospace" font-size="10">User returns to exact prior typing state</text>
+  </g>
+
+  <!-- Bottom Return Path from Cancel to State 1 -->
+  <path d="M380 470 L185 470 L185 290" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4 4" fill="none"/>
+  <polygon points="181,295 185,287 189,295" fill="#64748b"/>
+</svg>

@@ -29,6 +29,30 @@ export const getMessagesApi = (userId) => {
     return apiInstance.get(`/messages/${userId}`);
 }
 
-export const sendMessageApi = (message, userId) => {
-    return apiInstance.post(`/messages/send/${userId}`, { message });
+export const sendMessageApi = (payload, userId) => {
+    // payload can be a string (legacy) or an object: { message, fileUrl, messageType, fileName, fileSize, mimeType }
+    const body = typeof payload === "string" ? { message: payload } : payload;
+    return apiInstance.post(`/messages/send/${userId}`, body);
 }
+
+export const toggleReactionApi = (messageId, emoji) => {
+    return apiInstance.post(`/messages/react/${messageId}`, { emoji });
+}
+
+export const deleteForMeApi = (messageId) => {
+    return apiInstance.delete(`/messages/delete-for-me/${messageId}`);
+}
+
+export const deleteForEveryoneApi = (messageId) => {
+    return apiInstance.delete(`/messages/delete-for-everyone/${messageId}`);
+}
+
+export const editMessageApi = (messageId, message) => {
+    return apiInstance.patch(`/messages/edit/${messageId}`, { message });
+}
+
+export const getLinkPreviewApi = (url) => {
+    return apiInstance.get(`/messages/link-preview?url=${encodeURIComponent(url)}`);
+}
+
+

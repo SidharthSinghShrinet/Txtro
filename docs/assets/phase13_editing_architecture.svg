@@ -1,0 +1,166 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 780" width="100%" height="100%">
+  <defs>
+    <linearGradient id="p13Bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f19"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="cardIndigo" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b4b" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="cardCyan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#083344" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="cardEmerald" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#064e3b" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="cardViolet" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4c1d95" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.95"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1000" height="780" fill="url(#p13Bg)" rx="16" />
+  <rect x="1.5" y="1.5" width="997" height="777" fill="none" stroke="#1e293b" stroke-width="2" rx="15" />
+
+  <!-- Header -->
+  <g transform="translate(50, 45)">
+    <rect x="0" y="0" width="40" height="40" rx="10" fill="#6366f1" fill-opacity="0.2" stroke="#818cf8" stroke-width="1.5"/>
+    <path d="M14 26 L14 22 L23 13 L27 17 L18 26 Z M22 14 L25 11 L28 14 L25 17 Z" fill="#818cf8" />
+    <text x="54" y="22" fill="#f8fafc" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="bold">Txtro Phase 13: Live Message Editing Architecture</text>
+    <text x="54" y="38" fill="#94a3b8" font-family="system-ui, -apple-system, sans-serif" font-size="12">4-Stage Pipeline: In-Place UI Morphing, Draft Isolation &amp; Fast-Path CAS Concurrency</text>
+  </g>
+
+  <!-- STAGE 1: Gesture & Eligibility Guard -->
+  <g transform="translate(50, 110)">
+    <rect width="420" height="280" rx="14" fill="url(#cardIndigo)" stroke="#6366f1" stroke-width="1.5" stroke-opacity="0.5"/>
+    <rect x="18" y="16" width="80" height="24" rx="6" fill="#6366f1" fill-opacity="0.3" stroke="#818cf8" stroke-width="1"/>
+    <text x="58" y="32" fill="#c7d2fe" font-family="sans-serif" font-size="11" font-weight="bold" text-anchor="middle">STAGE 01</text>
+    <text x="110" y="33" fill="#f8fafc" font-family="sans-serif" font-size="15" font-weight="bold">Client Trigger &amp; Eligibility</text>
+    
+    <g transform="translate(20, 56)">
+      <rect width="380" height="52" rx="8" fill="#111827" stroke="#334155" stroke-width="1"/>
+      <text x="16" y="22" fill="#e2e8f0" font-family="monospace" font-size="12" font-weight="bold">Desktop / Mobile Trigger</text>
+      <text x="16" y="40" fill="#94a3b8" font-family="sans-serif" font-size="11">Hover ✏️ pencil icon or mobile action dock long-press</text>
+    </g>
+
+    <g transform="translate(20, 118)">
+      <rect width="380" height="66" rx="8" fill="#111827" stroke="#475569" stroke-width="1"/>
+      <text x="16" y="20" fill="#818cf8" font-family="monospace" font-size="11" font-weight="bold">canEdit Invariant Guards:</text>
+      <text x="16" y="36" fill="#cbd5e1" font-family="sans-serif" font-size="11">• isOutgoing (Sender only)  • messageType === &apos;text&apos;</text>
+      <text x="16" y="52" fill="#cbd5e1" font-family="sans-serif" font-size="11">• !isDeletedForEveryone  • age &lt;= 15 mins  • status === &apos;sent&apos;</text>
+    </g>
+
+    <g transform="translate(20, 194)">
+      <rect width="380" height="66" rx="8" fill="#1e1b4b" stroke="#6366f1" stroke-width="1" stroke-dasharray="4 2"/>
+      <text x="16" y="22" fill="#a5b4fc" font-family="monospace" font-size="11" font-weight="bold">Input Bar Morphing (0ms):</text>
+      <text x="16" y="38" fill="#e2e8f0" font-family="sans-serif" font-size="11">Mounts floating Edit Banner with original text preview</text>
+      <text x="16" y="54" fill="#94a3b8" font-family="sans-serif" font-size="10.5">Fills textarea, auto-focuses cursor &amp; binds Esc to cancel</text>
+    </g>
+  </g>
+
+  <!-- STAGE 2: Draft Isolation & Optimistic Dispatch -->
+  <g transform="translate(530, 110)">
+    <rect width="420" height="280" rx="14" fill="url(#cardCyan)" stroke="#06b6d4" stroke-width="1.5" stroke-opacity="0.5"/>
+    <rect x="18" y="16" width="80" height="24" rx="6" fill="#06b6d4" fill-opacity="0.3" stroke="#22d3ee" stroke-width="1"/>
+    <text x="58" y="32" fill="#a5f3fc" font-family="sans-serif" font-size="11" font-weight="bold" text-anchor="middle">STAGE 02</text>
+    <text x="110" y="33" fill="#f8fafc" font-family="sans-serif" font-size="15" font-weight="bold">Draft Isolation &amp; Optimistic UI</text>
+
+    <g transform="translate(20, 56)">
+      <rect width="380" height="60" rx="8" fill="#0b1928" stroke="#155e75" stroke-width="1"/>
+      <text x="16" y="20" fill="#22d3ee" font-family="monospace" font-size="11" font-weight="bold">Draft Auto-Save Bypass:</text>
+      <text x="16" y="36" fill="#e2e8f0" font-family="sans-serif" font-size="11">draftBeforeEditRef caches current unsent input draft</text>
+      <text x="16" y="50" fill="#67e8f9" font-family="sans-serif" font-size="10.5">editingMessageRef suppresses IndexedDB draft auto-saving</text>
+    </g>
+
+    <g transform="translate(20, 126)">
+      <rect width="380" height="64" rx="8" fill="#0b1928" stroke="#155e75" stroke-width="1"/>
+      <text x="16" y="20" fill="#38bdf8" font-family="monospace" font-size="11" font-weight="bold">0ms Optimistic Bubble Morph:</text>
+      <text x="16" y="36" fill="#e2e8f0" font-family="sans-serif" font-size="11">Immediate in-place update of text, isEdited: true, editedAt</text>
+      <text x="16" y="52" fill="#94a3b8" font-family="sans-serif" font-size="11">Updates users sidebar lastMessage preview instantly</text>
+    </g>
+
+    <g transform="translate(20, 200)">
+      <rect width="380" height="60" rx="8" fill="#082f49" stroke="#0ea5e9" stroke-width="1" stroke-dasharray="4 2"/>
+      <text x="16" y="20" fill="#bae6fd" font-family="monospace" font-size="11" font-weight="bold">REST Dispatch &amp; Restoral:</text>
+      <text x="16" y="36" fill="#e2e8f0" font-family="sans-serif" font-size="11">Dispatches PATCH /api/v1/messages/edit/:id</text>
+      <text x="16" y="50" fill="#7dd3fc" font-family="sans-serif" font-size="10.5">Restores previous draft to input dock or clears IndexedDB</text>
+    </g>
+  </g>
+
+  <!-- STAGE 3: Fast-Path CAS & DB Lock -->
+  <g transform="translate(50, 420)">
+    <rect width="420" height="310" rx="14" fill="url(#cardEmerald)" stroke="#10b981" stroke-width="1.5" stroke-opacity="0.5"/>
+    <rect x="18" y="16" width="80" height="24" rx="6" fill="#10b981" fill-opacity="0.3" stroke="#34d399" stroke-width="1"/>
+    <text x="58" y="32" fill="#a7f3d0" font-family="sans-serif" font-size="11" font-weight="bold" text-anchor="middle">STAGE 03</text>
+    <text x="110" y="33" fill="#f8fafc" font-family="sans-serif" font-size="15" font-weight="bold">Fast-Path CAS &amp; DB Lock</text>
+
+    <g transform="translate(20, 56)">
+      <rect width="380" height="95" rx="8" fill="#022c22" stroke="#047857" stroke-width="1"/>
+      <text x="16" y="20" fill="#34d399" font-family="monospace" font-size="11" font-weight="bold">1-Roundtrip Atomic Update:</text>
+      <text x="16" y="36" fill="#d1fae5" font-family="monospace" font-size="10.5">messageModel.findOneAndUpdate({</text>
+      <text x="28" y="50" fill="#6ee7b7" font-family="monospace" font-size="10">_id, senderId, messageType: &apos;text&apos;,</text>
+      <text x="28" y="64" fill="#6ee7b7" font-family="monospace" font-size="10">isDeletedForEveryone: false, createdAt: { $gte: -15m }</text>
+      <text x="16" y="78" fill="#d1fae5" font-family="monospace" font-size="10.5">}, { $set: { message, isEdited: true, editedAt } })</text>
+    </g>
+
+    <g transform="translate(20, 160)">
+      <rect width="380" height="65" rx="8" fill="#022c22" stroke="#065f46" stroke-width="1"/>
+      <text x="16" y="20" fill="#6ee7b7" font-family="monospace" font-size="11" font-weight="bold">WiredTiger Document Concurrency:</text>
+      <text x="16" y="36" fill="#e2e8f0" font-family="sans-serif" font-size="11">Document write-lock guarantees zero TOCTOU race.</text>
+      <text x="16" y="52" fill="#a7f3d0" font-family="sans-serif" font-size="10.5">Consecutive edits: Last write wins cleanly without data loss.</text>
+    </g>
+
+    <g transform="translate(20, 234)">
+      <rect width="380" height="60" rx="8" fill="#1c1917" stroke="#f59e0b" stroke-width="1" stroke-dasharray="3 3"/>
+      <text x="16" y="18" fill="#fbbf24" font-family="monospace" font-size="10.5" font-weight="bold">Diagnostic Fallback (0.1% Edge Case):</text>
+      <text x="16" y="34" fill="#fde68a" font-family="sans-serif" font-size="10.5">If null: Runs single read to diagnose exact error code</text>
+      <text x="16" y="48" fill="#d97706" font-family="sans-serif" font-size="10">&#x2794; 404 (Not Found), 403 (Wrong Sender), 400 (Expired / Deleted)</text>
+    </g>
+  </g>
+
+  <!-- STAGE 4: Real-Time Fan-out & Sync -->
+  <g transform="translate(530, 420)">
+    <rect width="420" height="310" rx="14" fill="url(#cardViolet)" stroke="#8b5cf6" stroke-width="1.5" stroke-opacity="0.5"/>
+    <rect x="18" y="16" width="80" height="24" rx="6" fill="#8b5cf6" fill-opacity="0.3" stroke="#a78bfa" stroke-width="1"/>
+    <text x="58" y="32" fill="#ddd6fe" font-family="sans-serif" font-size="11" font-weight="bold" text-anchor="middle">STAGE 04</text>
+    <text x="110" y="33" fill="#f8fafc" font-family="sans-serif" font-size="15" font-weight="bold">Real-Time Fan-out &amp; Sync</text>
+
+    <g transform="translate(20, 56)">
+      <rect width="380" height="75" rx="8" fill="#1e1035" stroke="#7c3aed" stroke-width="1"/>
+      <text x="16" y="20" fill="#c4b5fd" font-family="monospace" font-size="11" font-weight="bold">Socket.IO Fan-out (&apos;messageEdited&apos;):</text>
+      <text x="16" y="36" fill="#e2e8f0" font-family="sans-serif" font-size="11">Pushes delta to all receiver active socket sessions:</text>
+      <text x="16" y="52" fill="#a78bfa" font-family="monospace" font-size="10.5">{ messageId, conversationId, message, isEdited, editedAt }</text>
+      <text x="16" y="66" fill="#94a3b8" font-family="sans-serif" font-size="10">Zero payload bloat: No refetching of whole conversation.</text>
+    </g>
+
+    <g transform="translate(20, 140)">
+      <rect width="380" height="75" rx="8" fill="#1e1035" stroke="#6d28d9" stroke-width="1"/>
+      <text x="16" y="20" fill="#d8b4fe" font-family="monospace" font-size="11" font-weight="bold">Recipient Peer DOM Morphing:</text>
+      <text x="16" y="36" fill="#e2e8f0" font-family="sans-serif" font-size="11">In-place text replacement + renders italic &apos;(edited)&apos;</text>
+      <text x="16" y="52" fill="#e2e8f0" font-family="sans-serif" font-size="11">Updates sidebar lastMessage preview if latest message</text>
+      <text x="16" y="66" fill="#c084fc" font-family="sans-serif" font-size="10">0ms visual jitter; smooth React virtual DOM reconciliation</text>
+    </g>
+
+    <g transform="translate(20, 224)">
+      <rect width="380" height="70" rx="8" fill="#0f172a" stroke="#475569" stroke-width="1"/>
+      <text x="16" y="20" fill="#38bdf8" font-family="monospace" font-size="11" font-weight="bold">Phase 11 &amp; 14 Synergy Safeguards:</text>
+      <text x="16" y="36" fill="#cbd5e1" font-family="sans-serif" font-size="10.5">• Quoted reply snapshots retain original text (Immutable)</text>
+      <text x="16" y="50" fill="#cbd5e1" font-family="sans-serif" font-size="10.5">• Emoji reactions (Phase 10) remain perfectly intact</text>
+      <text x="16" y="64" fill="#38bdf8" font-family="sans-serif" font-size="10.5">• URL text changes trigger dynamic link preview re-scrape</text>
+    </g>
+  </g>
+
+  <!-- Connectors -->
+  <path d="M470 250 L530 250" stroke="#6366f1" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+  <polygon points="528,246 536,250 528,254" fill="#6366f1"/>
+
+  <path d="M740 390 L740 420" stroke="#06b6d4" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+  <polygon points="736,418 740,426 744,418" fill="#06b6d4"/>
+
+  <path d="M470 575 L530 575" stroke="#10b981" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+  <polygon points="528,571 536,575 528,579" fill="#10b981"/>
+</svg>
