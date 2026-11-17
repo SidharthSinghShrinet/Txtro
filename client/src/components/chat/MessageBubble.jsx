@@ -284,7 +284,7 @@ const MessageBubble = ({
           <div
             ref={dockRef}
             className={`absolute -top-10 ${isOutgoing ? 'right-0' : 'left-0'
-              } z-30 flex items-center gap-1 px-2 py-1 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-full shadow-lg border border-slate-200/80 dark:border-slate-700/80 animate-in zoom-in-95 fade-in duration-150 select-none`}
+              } z-30 flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-1 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-full shadow-lg border border-slate-200/80 dark:border-slate-700/80 animate-in zoom-in-95 fade-in duration-150 select-none max-w-[calc(100vw-2rem)] overflow-x-auto no-scrollbar`}
           >
             {QUICK_REACTIONS.map((em) => {
               const isSelected = userReaction === em;
@@ -297,7 +297,7 @@ const MessageBubble = ({
                     setShowReactionDock(false);
                     setShowFullPicker(false);
                   }}
-                  className={`w-7 h-7 flex items-center justify-center text-lg hover:scale-130 active:scale-95 transition-transform cursor-pointer rounded-full ${isSelected
+                  className={`w-7 h-7 flex items-center justify-center text-lg hover:scale-130 active:scale-95 transition-transform cursor-pointer rounded-full shrink-0 ${isSelected
                     ? 'bg-indigo-100 dark:bg-indigo-950/80 ring-1 ring-indigo-500'
                     : 'hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
@@ -315,13 +315,27 @@ const MessageBubble = ({
                 e.stopPropagation();
                 setShowFullPicker((prev) => !prev);
               }}
-              className={`w-7 h-7 flex items-center justify-center rounded-full transition-all cursor-pointer ${showFullPicker
+              className={`w-7 h-7 flex items-center justify-center rounded-full transition-all cursor-pointer shrink-0 ${showFullPicker
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 hover:scale-115 active:scale-95'
                 }`}
               title="More reactions"
             >
               <Plus size={16} />
+            </button>
+
+            {/* Mobile quick reply button */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowReactionDock(false);
+                onSelectReply();
+              }}
+              className="w-7 h-7 flex items-center justify-center rounded-full text-slate-500 hover:text-indigo-500 dark:text-slate-400 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-all cursor-pointer hover:scale-115 active:scale-95 shrink-0"
+              title="Reply to message"
+            >
+              <Reply size={14} />
             </button>
 
             {/* Mobile quick edit button */}
@@ -333,7 +347,7 @@ const MessageBubble = ({
                   setShowReactionDock(false);
                   onEditClick();
                 }}
-                className="w-7 h-7 flex items-center justify-center rounded-full text-slate-500 hover:text-indigo-500 dark:text-slate-400 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-all cursor-pointer hover:scale-115 active:scale-95"
+                className="w-7 h-7 flex items-center justify-center rounded-full text-slate-500 hover:text-indigo-500 dark:text-slate-400 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-all cursor-pointer hover:scale-115 active:scale-95 shrink-0"
                 title="Edit message"
               >
                 <Pencil size={14} />
@@ -348,7 +362,7 @@ const MessageBubble = ({
                 setShowReactionDock(false);
                 onDeleteClick();
               }}
-              className="w-7 h-7 flex items-center justify-center rounded-full text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all cursor-pointer hover:scale-115 active:scale-95"
+              className="w-7 h-7 flex items-center justify-center rounded-full text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all cursor-pointer hover:scale-115 active:scale-95 shrink-0"
               title="Delete message"
             >
               <Trash2 size={15} />
@@ -360,12 +374,12 @@ const MessageBubble = ({
         {showFullPicker && (
           <div
             ref={fullPickerRef}
-            className={`absolute bottom-full mb-3 ${isOutgoing ? 'right-0' : 'left-0'
-              } z-40 shadow-2xl rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700/80 animate-in fade-in zoom-in-95 duration-150`}
+            className={`fixed inset-x-3 bottom-16 sm:absolute sm:inset-auto sm:bottom-full sm:mb-3 ${isOutgoing ? 'sm:right-0' : 'sm:left-0'
+              } z-50 shadow-2xl rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700/80 animate-in fade-in zoom-in-95 duration-150 max-w-[calc(100vw-1.5rem)] sm:max-w-[320px] w-auto sm:w-[320px]`}
           >
             <Suspense
               fallback={
-                <div className="w-[300px] sm:w-[320px] h-[360px] bg-white dark:bg-slate-900 flex flex-col items-center justify-center gap-2 text-slate-400">
+                <div className="w-full h-[340px] sm:h-[360px] bg-white dark:bg-slate-900 flex flex-col items-center justify-center gap-2 text-slate-400">
                   <Loader2 size={24} className="animate-spin text-indigo-500" />
                   <span className="text-xs font-medium">Loading reactions...</span>
                 </div>
@@ -380,8 +394,8 @@ const MessageBubble = ({
                     : 'light'
                 }
                 searchPlaceHolder="Search reactions..."
-                width={310}
-                height={360}
+                width="100%"
+                height={350}
                 lazyLoadEmojis={true}
                 previewConfig={{ showPreview: false }}
               />
@@ -481,7 +495,11 @@ const MessageBubble = ({
                     <div
                       key={att.fileUrl || idx}
                       onClick={() => status !== 'sending' && onImageClick(imageAttachments, idx)}
-                      className={`relative group bg-slate-900/10 ${status !== 'sending' ? 'cursor-pointer' : ''} overflow-hidden rounded-lg ${isSpanAcross ? 'col-span-2 max-h-[220px]' : 'aspect-square max-h-[160px]'
+                      className={`relative group bg-slate-900/10 ${status !== 'sending' ? 'cursor-pointer' : ''} overflow-hidden rounded-lg ${imageAttachments.length === 1
+                        ? 'w-full max-h-[260px] sm:max-h-[320px]'
+                        : isSpanAcross
+                          ? 'col-span-2 max-h-[190px] sm:max-h-[220px]'
+                          : 'aspect-square max-h-[135px] sm:max-h-[160px]'
                         }`}
                     >
                       <img

@@ -243,7 +243,7 @@ const ChatContainer = ({
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-2"
+          className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-2"
         >
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500">
@@ -314,12 +314,12 @@ const ChatContainer = ({
           onClick={() => scrollToBottom('smooth')}
           title="Scroll to bottom"
           aria-label="Scroll to bottom"
-          className={`absolute right-4 sm:right-6 bottom-4 z-20 w-10 h-10 rounded-full flex items-center justify-center bg-white/95 dark:bg-slate-800/95 text-slate-700 dark:text-slate-200 border border-slate-200/90 dark:border-slate-700/80 shadow-md shadow-slate-900/10 dark:shadow-slate-950/40 backdrop-blur-md cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/90 hover:scale-105 active:scale-95 transition-all duration-300 ease-out ${showScrollBottom
+          className={`absolute right-3 sm:right-6 bottom-3 sm:bottom-4 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-white/95 dark:bg-slate-800/95 text-slate-700 dark:text-slate-200 border border-slate-200/90 dark:border-slate-700/80 shadow-md shadow-slate-900/10 dark:shadow-slate-950/40 backdrop-blur-md cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/90 hover:scale-105 active:scale-95 transition-all duration-300 ease-out ${showScrollBottom
               ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto'
               : 'opacity-0 translate-y-3 scale-90 pointer-events-none'
             }`}
         >
-          <ChevronDown size={20} className="stroke-[2.2]" />
+          <ChevronDown size={19} className="stroke-[2.2] sm:w-5 sm:h-5" />
           {newMessagesCount > 0 && (
             <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 bg-emerald-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center shadow-xs">
               {newMessagesCount > 99 ? '99+' : newMessagesCount}
@@ -370,11 +370,11 @@ const ChatContainer = ({
         return (
           <div
             onClick={() => setConfirmDeleteMessage(null)}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150"
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150"
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 animate-in zoom-in-95 duration-150"
+              className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 animate-in zoom-in-95 duration-150"
             >
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-2xl bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">

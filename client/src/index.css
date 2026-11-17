@@ -62,6 +62,15 @@ html.light ::-webkit-scrollbar-thumb:hover {
   background: rgba(100, 116, 139, 0.5);
 }
 
+/* Utility to hide scrollbars while allowing smooth horizontal or vertical touch scrolling */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* ==========================================================================
    PWA Startup Animated Splash Screen
    ========================================================================== */

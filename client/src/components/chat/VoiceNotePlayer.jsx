@@ -157,7 +157,7 @@ const VoiceNotePlayer = ({
   const progressPercent = audioDuration > 0 ? (currentTime / audioDuration) * 100 : 0;
 
   return (
-    <div className="flex items-center gap-3 py-1 px-1 select-none min-w-[240px] sm:min-w-[270px]">
+    <div className="flex items-center gap-2.5 sm:gap-3 py-1 px-0.5 sm:px-1 select-none w-full min-w-[190px] sm:min-w-[250px] max-w-full">
       {/* Hidden Native Audio Element */}
       <audio
         ref={audioRef}
@@ -172,16 +172,16 @@ const VoiceNotePlayer = ({
       <button
         type="button"
         onClick={togglePlayPause}
-        className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-transform active:scale-95 cursor-pointer shadow-md ${isOutgoing
+        className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 transition-transform active:scale-95 cursor-pointer shadow-md ${isOutgoing
             ? 'bg-white text-indigo-600 hover:bg-slate-100 shadow-indigo-950/20'
             : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-500/25'
           }`}
         title={isPlaying ? 'Pause' : 'Play voice note'}
       >
         {isPlaying ? (
-          <Pause size={18} className="fill-current" />
+          <Pause size={16} className="fill-current sm:w-[18px] sm:h-[18px]" />
         ) : (
-          <Play size={18} className="fill-current ml-0.5" />
+          <Play size={16} className="fill-current ml-0.5 sm:w-[18px] sm:h-[18px]" />
         )}
       </button>
 
@@ -194,7 +194,7 @@ const VoiceNotePlayer = ({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
-          className="flex items-center gap-[3px] h-6 cursor-pointer py-1 touch-none select-none"
+          className="flex items-center gap-[2px] sm:gap-[3px] h-6 cursor-pointer py-1 touch-none select-none min-w-0 overflow-hidden"
           title="Drag or click to seek"
         >
           {activeWaveform.map((heightPercent, idx) => {
@@ -205,7 +205,7 @@ const VoiceNotePlayer = ({
               <span
                 key={idx}
                 style={{ height: `${Math.max(5, (heightPercent / 100) * 22)}px` }}
-                className={`flex-1 min-w-[2px] rounded-full transition-colors duration-100 ${isOutgoing
+                className={`flex-1 min-w-[1.5px] max-w-[3.5px] rounded-full transition-colors duration-100 ${isOutgoing
                     ? isPlayed
                       ? 'bg-white'
                       : 'bg-white/35 hover:bg-white/50'

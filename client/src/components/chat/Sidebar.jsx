@@ -169,8 +169,8 @@ const Sidebar = ({
                   </div>
 
                   {/* Row 2: Last Message Snippet (or @username) & Unread Badge */}
-                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                    <div className={`truncate max-w-[150px] sm:max-w-[180px] flex items-center gap-1 ${contact.unreadCount > 0 && !isSelected ? 'font-semibold text-slate-900 dark:text-slate-100' : ''}`}>
+                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 gap-2">
+                    <div className={`flex-1 min-w-0 truncate flex items-center gap-1 ${contact.unreadCount > 0 && !isSelected ? 'font-semibold text-slate-900 dark:text-slate-100' : ''}`}>
                       {draftsMap[contact._id] && (draftsMap[contact._id].text?.trim() || draftsMap[contact._id].files?.length > 0) ? (
                         <span className="inline-flex items-center gap-1 font-medium truncate">
                           <span className="text-green-500 dark:text-green-500 font-semibold shrink-0">Draft:</span>
