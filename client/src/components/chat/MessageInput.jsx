@@ -333,8 +333,8 @@ const MessageInput = ({
   };
 
   return (
-    <div className="relative border-t border-slate-200 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/60 backdrop-blur-md shrink-0 transition-colors duration-200 w-full min-w-0 max-w-full overflow-hidden">
-      {/* Full Emoji Picker Popover Modal (Phase 10) */}
+    <div className="relative border-t border-slate-200 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/60 backdrop-blur-md shrink-0 transition-colors duration-200 w-full min-w-0 max-w-full">
+      {/* Full Emoji Picker Popover Modal (Phase 10) — desktop/laptop only */}
       {showEmojiPicker && (
         <div
           ref={emojiPickerRef}
@@ -729,13 +729,14 @@ const MessageInput = ({
                   <Paperclip size={17} className="sm:w-[18px] sm:h-[18px]" />
                 </button>
               )}
+              {/* Emoji Picker Button: Desktop/Laptop only — mobile/tablet use native OS keyboard emoji */}
               <button
                 ref={emojiButtonRef}
                 type="button"
                 onClick={() => setShowEmojiPicker((prev) => !prev)}
                 onMouseEnter={prefetchEmojiPicker}
                 disabled={disabled || isUploading}
-                className={`p-1.5 sm:p-2 rounded-xl transition-all cursor-pointer disabled:opacity-50 ${
+                className={`hidden md:flex p-1.5 sm:p-2 rounded-xl transition-all cursor-pointer disabled:opacity-50 ${
                   showEmojiPicker
                     ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60'
                     : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
