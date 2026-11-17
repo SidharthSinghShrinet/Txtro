@@ -1040,7 +1040,7 @@ function HomePage() {
                 </div>
 
                 {/* Right Area: Chat Window or Empty State */}
-                <div className={`flex-1 h-full min-w-0 w-full max-w-full ${!selectedUser ? 'hidden md:flex' : 'flex flex-col'}`}>
+                <div className={`flex-1 h-full min-w-0 ${!selectedUser ? 'hidden md:flex' : 'flex'}`}>
                     {selectedUser ? (
                         <ChatContainer
                             key={selectedUser?._id}
