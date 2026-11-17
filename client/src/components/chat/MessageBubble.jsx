@@ -246,7 +246,7 @@ const MessageBubble = ({
           transform: swipeOffset > 0 ? `translateX(${swipeOffset}px)` : undefined,
           transition: isSwiping ? 'none' : 'transform 0.2s ease-out',
         }}
-        className={`relative max-w-[85%] sm:max-w-[70%] min-w-0 flex items-center gap-1.5 ${isOutgoing ? 'flex-row' : 'flex-row-reverse'
+        className={`relative ${docAttachments.length > 0 ? 'w-full max-w-[85%] sm:max-w-[70%]' : 'max-w-[85%] sm:max-w-[70%]'} min-w-0 flex items-center gap-1.5 ${isOutgoing ? 'flex-row' : 'flex-row-reverse'
           }`}
       >
         {/* Desktop Quick Action Buttons (Hover on Laptop / PC) */}
@@ -427,7 +427,8 @@ const MessageBubble = ({
               e.preventDefault();
             }
           }}
-          className={`rounded-2xl shadow-sm text-sm break-words relative transition-all overflow-hidden min-w-0 max-w-full ${isHighlighted
+          className={`rounded-2xl shadow-sm text-sm break-words relative transition-all overflow-hidden min-w-0 max-w-full ${docAttachments.length > 0 ? 'w-full max-w-[calc(100vw-5.5rem)] sm:max-w-[320px]' : ''
+            } ${isHighlighted
             ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-slate-950 animate-pulse'
             : ''
             } ${isOutgoing

@@ -212,7 +212,7 @@ const ChatContainer = ({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className="relative flex-1 h-full flex flex-col bg-slate-100/60 dark:bg-slate-950 overflow-hidden transition-colors duration-200"
+      className="relative flex-1 min-w-0 w-full max-w-full h-full flex flex-col bg-slate-100/60 dark:bg-slate-950 overflow-hidden transition-colors duration-200"
     >
       {/* Sleek Drag & Drop Overlay */}
       {isDraggingOver && (
@@ -239,11 +239,11 @@ const ChatContainer = ({
       />
 
       {/* Messages Scrollable Area Wrapper */}
-      <div className="relative flex-1 min-h-0 flex flex-col overflow-hidden">
+      <div className="relative flex-1 min-h-0 min-w-0 w-full max-w-full flex flex-col overflow-hidden">
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-6 space-y-2"
+          className="flex-1 min-w-0 w-full max-w-full overflow-y-auto overflow-x-hidden p-3 sm:p-6 space-y-2"
         >
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500">

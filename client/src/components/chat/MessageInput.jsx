@@ -333,7 +333,7 @@ const MessageInput = ({
   };
 
   return (
-    <div className="relative border-t border-slate-200 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/60 backdrop-blur-md shrink-0 transition-colors duration-200">
+    <div className="relative border-t border-slate-200 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/60 backdrop-blur-md shrink-0 transition-colors duration-200 w-full min-w-0 max-w-full overflow-hidden">
       {/* Full Emoji Picker Popover Modal (Phase 10) */}
       {showEmojiPicker && (
         <div

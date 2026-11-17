@@ -11,7 +11,7 @@ const ChatHeader = ({
   if (!selectedUser) return null;
 
   return (
-    <div className="h-16 px-3 sm:px-6 border-b border-slate-200 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/60 backdrop-blur-md flex items-center justify-between shrink-0 transition-colors duration-200 gap-2">
+    <div className="h-16 px-3 sm:px-6 border-b border-slate-200 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/60 backdrop-blur-md flex items-center justify-between shrink-0 transition-colors duration-200 gap-2 w-full min-w-0 max-w-full overflow-hidden">
       <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
         {/* Back button for mobile */}
         <button

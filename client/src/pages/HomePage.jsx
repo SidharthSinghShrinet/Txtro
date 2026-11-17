@@ -1004,7 +1004,7 @@ function HomePage() {
     // Lock window scrolling on mobile devices so virtual keyboard cannot shift the header off-screen
     useEffect(() => {
         const handleWindowScroll = () => {
-            if (window.scrollY !== 0) {
+            if (window.scrollY !== 0 || window.scrollX !== 0) {
                 window.scrollTo(0, 0);
             }
         };
@@ -1040,7 +1040,7 @@ function HomePage() {
                 </div>
 
                 {/* Right Area: Chat Window or Empty State */}
-                <div className={`flex-1 h-full ${!selectedUser ? 'hidden md:flex' : 'flex'}`}>
+                <div className={`flex-1 h-full min-w-0 w-full max-w-full ${!selectedUser ? 'hidden md:flex' : 'flex flex-col'}`}>
                     {selectedUser ? (
                         <ChatContainer
                             key={selectedUser?._id}
