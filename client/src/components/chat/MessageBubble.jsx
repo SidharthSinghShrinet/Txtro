@@ -74,15 +74,21 @@ const MessageBubble = ({
     return found ? found.emoji : null;
   }, [reactions, currentUserId]);
 
-  // Touch handlers for mobile long-press reaction dock (350ms hold) & swipe-to-reply
+  // Touch handlers for mobile/tablet long-press reaction dock (350ms hold) & swipe-to-reply
   const handleTouchStart = (e) => {
     if (e.touches?.[0]) {
       touchStartXRef.current = e.touches[0].clientX;
       touchStartYRef.current = e.touches[0].clientY;
     }
     setIsSwiping(false);
+    if (touchTimerRef.current) {
+      clearTimeout(touchTimerRef.current);
+    }
     touchTimerRef.current = setTimeout(() => {
       setShowReactionDock(true);
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try { navigator.vibrate(40); } catch { }
+      }
     }, 350);
   };
 
@@ -93,12 +99,16 @@ const MessageBubble = ({
     const deltaX = currentX - touchStartXRef.current;
     const deltaY = Math.abs(currentY - touchStartYRef.current);
 
-    // If swiping right on mobile
-    if (deltaX > 15 && deltaY < 30) {
+    // If scrolling vertically or finger moved more than 8px, cancel long-press immediately
+    if (Math.abs(deltaX) > 8 || deltaY > 8) {
       if (touchTimerRef.current) {
         clearTimeout(touchTimerRef.current);
         touchTimerRef.current = null;
       }
+    }
+
+    // If swiping right on mobile to reply
+    if (deltaX > 15 && deltaY < 30) {
       setIsSwiping(true);
       setSwipeOffset(Math.min(deltaX * 0.4, 50));
     }
@@ -239,9 +249,9 @@ const MessageBubble = ({
         className={`relative max-w-[88%] sm:max-w-[72%] flex items-center gap-1.5 ${isOutgoing ? 'flex-row' : 'flex-row-reverse'
           }`}
       >
-        {/* Desktop Quick Action Buttons (Hover) */}
+        {/* Desktop Quick Action Buttons (Hover on Laptop / PC) */}
         {status !== 'sending' && (
-          <div className="opacity-0 group-hover/msg:opacity-100 flex items-center gap-0.5 transition-opacity duration-150 shrink-0">
+          <div className="hidden md:flex opacity-0 md:group-hover/msg:opacity-100 items-center gap-0.5 transition-opacity duration-150 shrink-0 desktop-hover-action">
             <button
               type="button"
               onClick={onSelectReply}
@@ -324,6 +334,9 @@ const MessageBubble = ({
               <Plus size={16} />
             </button>
 
+            {/* Mobile/Tablet Actions Divider - Only shown on touch devices */}
+            <div className="w-[1px] h-4 bg-slate-200 dark:bg-slate-700 mx-0.5 shrink-0 md:hidden" />
+
             {/* Mobile quick reply button */}
             <button
               type="button"
@@ -332,7 +345,7 @@ const MessageBubble = ({
                 setShowReactionDock(false);
                 onSelectReply();
               }}
-              className="w-7 h-7 flex items-center justify-center rounded-full text-slate-500 hover:text-indigo-500 dark:text-slate-400 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-all cursor-pointer hover:scale-115 active:scale-95 shrink-0"
+              className="md:hidden w-7 h-7 flex items-center justify-center rounded-full text-slate-500 hover:text-indigo-500 dark:text-slate-400 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-all cursor-pointer hover:scale-115 active:scale-95 shrink-0"
               title="Reply to message"
             >
               <Reply size={14} />
@@ -347,7 +360,7 @@ const MessageBubble = ({
                   setShowReactionDock(false);
                   onEditClick();
                 }}
-                className="w-7 h-7 flex items-center justify-center rounded-full text-slate-500 hover:text-indigo-500 dark:text-slate-400 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-all cursor-pointer hover:scale-115 active:scale-95 shrink-0"
+                className="md:hidden w-7 h-7 flex items-center justify-center rounded-full text-slate-500 hover:text-indigo-500 dark:text-slate-400 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-all cursor-pointer hover:scale-115 active:scale-95 shrink-0"
                 title="Edit message"
               >
                 <Pencil size={14} />
@@ -362,7 +375,7 @@ const MessageBubble = ({
                 setShowReactionDock(false);
                 onDeleteClick();
               }}
-              className="w-7 h-7 flex items-center justify-center rounded-full text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all cursor-pointer hover:scale-115 active:scale-95 shrink-0"
+              className="md:hidden w-7 h-7 flex items-center justify-center rounded-full text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all cursor-pointer hover:scale-115 active:scale-95 shrink-0"
               title="Delete message"
             >
               <Trash2 size={15} />
@@ -407,7 +420,13 @@ const MessageBubble = ({
         <div
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
           onTouchMove={handleTouchMove}
+          onContextMenu={(e) => {
+            if ('ontouchstart' in window) {
+              e.preventDefault();
+            }
+          }}
           className={`rounded-2xl shadow-sm text-sm break-words relative transition-all overflow-hidden ${isHighlighted
             ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-slate-950 animate-pulse'
             : ''

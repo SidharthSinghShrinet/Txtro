@@ -71,6 +71,18 @@ html.light ::-webkit-scrollbar-thumb:hover {
   scrollbar-width: none;
 }
 
+/* Quick Action Buttons: Only visible on hover for precision pointer devices (Laptop, PC, Desktop) */
+@media (hover: hover) and (pointer: fine) {
+  .desktop-hover-action {
+    display: flex !important;
+  }
+}
+@media (hover: none), (pointer: coarse) {
+  .desktop-hover-action {
+    display: none !important;
+  }
+}
+
 /* ==========================================================================
    PWA Startup Animated Splash Screen
    ========================================================================== */
