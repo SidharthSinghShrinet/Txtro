@@ -27,6 +27,7 @@ const MessageInput = ({
   editingMessage = null,
   onCancelEdit = () => { },
   currentUserId = null,
+  onFocus = () => { },
 }) => {
   const fileInputRef = useRef(null);
 
@@ -754,6 +755,7 @@ const MessageInput = ({
                 value={value}
                 onChange={onChange}
                 onKeyDown={handleKeyDown}
+                onFocus={onFocus}
                 disabled={disabled || isUploading}
                 placeholder={
                   editingMessage

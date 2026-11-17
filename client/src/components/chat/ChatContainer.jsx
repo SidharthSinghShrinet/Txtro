@@ -111,6 +111,19 @@ const ChatContainer = ({
     isNearBottomRef.current = true;
   };
 
+  // Prevent mobile keyboard from scrolling the page header out of view
+  const handleInputFocus = () => {
+    if (typeof window !== 'undefined' && window.scrollY !== 0) {
+      window.scrollTo(0, 0);
+    }
+    setTimeout(() => {
+      if (typeof window !== 'undefined' && window.scrollY !== 0) {
+        window.scrollTo(0, 0);
+      }
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 120);
+  };
+
   // Auto-scroll when switching contacts
   useEffect(() => {
     setNewMessagesCount(0);
@@ -333,6 +346,7 @@ const ChatContainer = ({
         editingMessage={editingMessage}
         onCancelEdit={onCancelEdit}
         currentUserId={currentUser?._id}
+        onFocus={handleInputFocus}
       />
 
       {/* Professional YARL Lightbox with Carousel, Zoom, Download & Thumbnails */}

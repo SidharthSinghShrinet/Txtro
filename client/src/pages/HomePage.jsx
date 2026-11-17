@@ -957,10 +957,21 @@ function HomePage() {
         };
     }, [socket, selectedUser, user?._id]);
 
+    // Lock window scrolling on mobile devices so virtual keyboard cannot shift the header off-screen
+    useEffect(() => {
+        const handleWindowScroll = () => {
+            if (window.scrollY !== 0) {
+                window.scrollTo(0, 0);
+            }
+        };
+        window.addEventListener("scroll", handleWindowScroll, { passive: true });
+        return () => window.removeEventListener("scroll", handleWindowScroll);
+    }, []);
+
     const filteredUsers = users.filter((u) => u?.fullname?.toLowerCase().includes(searchQuery.toLowerCase()) || u?.username?.toLowerCase().includes(searchQuery.toLowerCase()))
 
     return (
-        <div className="h-[100dvh] w-screen flex bg-slate-50 dark:bg-slate-950 overflow-hidden select-none transition-colors duration-200">
+        <div className="fixed inset-0 w-full h-full flex bg-slate-50 dark:bg-slate-950 overflow-hidden select-none transition-colors duration-200">
             {/* Background Ambient Glows */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden">
                 <div className="absolute -top-32 -left-32 w-96 h-96 bg-indigo-600/5 dark:bg-indigo-600/10 rounded-full blur-3xl" />
