@@ -5,10 +5,8 @@ import ErrorHandler from "../utils/ErrorHandler.util.js";
 import ApiResponse from "../utils/ApiResponse.util.js";
 import { getReceiverSocketIds, io } from "../socket/socket.js";
 import { deleteObjectsFromOCI, generatePreSignedUploadUrl } from "../utils/ociStorage.util.js";
-import { text } from "express";
 import uploadIntentModel from "../models/uploadIntent.model.js";
 import { extractLinkPreview } from "../utils/linkPreview.js";
-import { error } from "console";
 
 
 const getUploadUrl = expressAsyncHandler(async (req, res) => {

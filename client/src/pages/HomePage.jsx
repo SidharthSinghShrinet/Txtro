@@ -2,12 +2,15 @@ import React, { useRef, useState } from 'react';
 import Sidebar from '../components/chat/Sidebar';
 import ChatContainer from '../components/chat/ChatContainer';
 import NoChatSelected from '../components/chat/NoChatSelected';
+import ProfileEditModal from '../components/chat/ProfileEditModal';
+import ContactProfileModal from '../components/chat/ContactProfileModal';
+import AvatarLightbox from '../components/common/AvatarLightbox';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import toast from 'react-hot-toast';
-import { getAllUsersWithMetadataApi, getMessagesApi, sendMessageApi, toggleReactionApi, deleteForMeApi, deleteForEveryoneApi, editMessageApi } from '../api/api';
+import { getAllUsersWithMetadataApi, getMessagesApi, sendMessageApi, toggleReactionApi, deleteForMeApi, deleteForEveryoneApi, editMessageApi, updateProfileApi, abortAvatarUploadApi, getProfileOptionsApi } from '../api/api';
 import { useEffect } from 'react';
-import { uploadFilesDirectlyToCloud } from '../utils/fileUpload';
+import { uploadFilesDirectlyToCloud, uploadAvatarDirectlyToCloud } from '../utils/fileUpload';
 import {
     saveDraftToStorage,
     deleteDraftFromStorage,
@@ -15,8 +18,13 @@ import {
 } from '../utils/draftStorage';
 
 function HomePage() {
-    const { user, logout } = useAuth();
+    const { user, setUser, logout } = useAuth();
     const { socket, onlineUsers } = useSocket();
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+    const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+    const [lightboxAvatarUser, setLightboxAvatarUser] = useState(null);
+    const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+    const [profileOptions, setProfileOptions] = useState({ statusOptions: [], maxBioLength: 120 });
 
     // Pure UI state placeholders (You can replace/wire with your API data)
     const [selectedUser, setSelectedUser] = useState(null);
@@ -81,12 +89,13 @@ function HomePage() {
     const [messages, setMessages] = useState([]);
 
     // Sample messages (Replace with your actual messages from GET /api/v1/messages/:id)
+    const selectedUserId = selectedUser?._id;
     useEffect(() => {
         async function getMessages() {
-            if (!selectedUser) return;
+            if (!selectedUserId) return;
             setMessages([]);
             try {
-                const response = await getMessagesApi(selectedUser?._id);
+                const response = await getMessagesApi(selectedUserId);
                 if (response?.status === 200) {
                     const fetchedMessages = response?.data?.data || [];
                     setMessages(fetchedMessages);
@@ -98,7 +107,7 @@ function HomePage() {
                     // Ensure unread counter is reset & lastMessage strictly mirrors DB source of truth
                     setUsers((prev) =>
                         prev.map((u) =>
-                            u?._id === selectedUser?._id
+                            u?._id === selectedUserId
                                 ? {
                                     ...u,
                                     unreadCount: 0,
@@ -113,7 +122,7 @@ function HomePage() {
             }
         }
         getMessages();
-    }, [selectedUser]);
+    }, [selectedUserId]);
 
 
     // Unified cleanup & state restoration when returning to sidebar
@@ -978,6 +987,24 @@ function HomePage() {
             );
         };
 
+        const handleUserProfileUpdated = (updatedUser) => {
+            if (!updatedUser?._id) return;
+
+            if (updatedUser._id === user?._id) {
+                setUser((prev) => (prev ? { ...prev, ...updatedUser } : updatedUser));
+            }
+
+            setUsers((prevUsers) =>
+                prevUsers.map((u) =>
+                    u._id === updatedUser._id ? { ...u, ...updatedUser } : u
+                )
+            );
+
+            setSelectedUser((prevSelected) =>
+                prevSelected?._id === updatedUser._id ? { ...prevSelected, ...updatedUser } : prevSelected
+            );
+        };
+
         socket.on("newMessage", handleNewMessage);
         socket.on("userTyping", handleUserTyping);
         socket.on("userStoppedTyping", handleUserStoppedTyping);
@@ -987,6 +1014,7 @@ function HomePage() {
         socket.on("messageReactionUpdated", handleMessageReactionUpdated);
         socket.on("messageDeleted", handleMessageDeleted);
         socket.on("messageEdited", handleMessageEdited);
+        socket.on("user:profile_updated", handleUserProfileUpdated);
 
         return () => {
             socket.off("newMessage", handleNewMessage);
@@ -998,6 +1026,7 @@ function HomePage() {
             socket.off("messageReactionUpdated", handleMessageReactionUpdated);
             socket.off("messageDeleted", handleMessageDeleted);
             socket.off("messageEdited", handleMessageEdited);
+            socket.off("user:profile_updated", handleUserProfileUpdated);
         };
     }, [socket, selectedUser, user?._id]);
 
@@ -1011,6 +1040,64 @@ function HomePage() {
         window.addEventListener("scroll", handleWindowScroll, { passive: true });
         return () => window.removeEventListener("scroll", handleWindowScroll);
     }, []);
+
+    // Lazy-load backend profile options only when Edit Profile is opened
+    const handleOpenProfileModal = async () => {
+        setIsProfileModalOpen(true);
+        if (profileOptions.statusOptions.length === 0) {
+            try {
+                const response = await getProfileOptionsApi();
+                if (response?.status === 200 && response?.data?.data) {
+                    setProfileOptions(response.data.data);
+                }
+            } catch (error) {
+                console.warn("Could not load profile options:", error);
+            }
+        }
+    };
+
+    // Feature 15: Orchestrate Avatar OCI Upload + Atomic Profile DB Commit + Compensating Rollback
+    const handleUpdateProfile = async ({ fullname, bio, customStatus, selectedFile, removeAvatar }) => {
+        if (isUpdatingProfile) return;
+        setIsUpdatingProfile(true);
+        let uploadedIntentId = null;
+        let uploadedObjectKey = null;
+
+        try {
+            const payload = { fullname, bio, customStatus };
+
+            if (selectedFile) {
+                const { avatar, avatarKey, avatarThumb, avatarThumbKey, uploadIntentId } = await uploadAvatarDirectlyToCloud(selectedFile);
+                uploadedIntentId = uploadIntentId;
+                uploadedObjectKey = avatarKey;
+                payload.avatar = avatar;
+                payload.avatarKey = avatarKey;
+                payload.avatarThumb = avatarThumb;
+                payload.avatarThumbKey = avatarThumbKey;
+                payload.uploadIntentId = uploadIntentId;
+            } else if (removeAvatar) {
+                payload.removeAvatar = true;
+            }
+
+            const res = await updateProfileApi(payload);
+            if (res?.status === 200 && res?.data?.data) {
+                const updatedUser = res.data.data;
+                setUser((prev) => (prev ? { ...prev, ...updatedUser } : updatedUser));
+                toast.success("Profile updated successfully!");
+                setIsProfileModalOpen(false);
+            }
+        } catch (error) {
+            if (uploadedIntentId || uploadedObjectKey) {
+                abortAvatarUploadApi({
+                    uploadIntentId: uploadedIntentId,
+                    objectKey: uploadedObjectKey,
+                }).catch(() => { });
+            }
+            toast.error(error?.response?.data?.message || error?.message || "Failed to update profile");
+        } finally {
+            setIsUpdatingProfile(false);
+        }
+    };
 
     const filteredUsers = users.filter((u) => u?.fullname?.toLowerCase().includes(searchQuery.toLowerCase()) || u?.username?.toLowerCase().includes(searchQuery.toLowerCase()))
 
@@ -1035,6 +1122,8 @@ function HomePage() {
                         searchQuery={searchQuery}
                         onSearchChange={(e) => setSearchQuery(e.target.value)}
                         onLogout={logout}
+                        onOpenProfile={handleOpenProfileModal}
+                        onViewAvatar={setLightboxAvatarUser}
                         draftsMap={draftsMap}
                     />
                 </div>
@@ -1101,6 +1190,8 @@ function HomePage() {
                             editingMessage={editingMessage}
                             onStartEdit={handleStartEdit}
                             onCancelEdit={handleCancelEdit}
+                            onOpenContactProfile={() => setIsContactModalOpen(true)}
+                            statusOptions={profileOptions.statusOptions}
                             onCancelUpload={() => {
                                 if (abortUploadRef.current) {
                                     abortUploadRef.current();
@@ -1112,6 +1203,32 @@ function HomePage() {
                     )}
                 </div>
             </div>
+
+            {/* Feature 15: Profile Customization & Contact Info Modals */}
+            <ProfileEditModal
+                isOpen={isProfileModalOpen}
+                onClose={() => setIsProfileModalOpen(false)}
+                currentUser={user}
+                isSaving={isUpdatingProfile}
+                onSaveProfile={handleUpdateProfile}
+                onViewAvatar={setLightboxAvatarUser}
+                statusOptions={profileOptions.statusOptions}
+                maxBioLength={profileOptions.maxBioLength}
+            />
+
+            <ContactProfileModal
+                isOpen={isContactModalOpen}
+                onClose={() => setIsContactModalOpen(false)}
+                contact={selectedUser}
+                isOnline={onlineUsers?.includes(selectedUser?._id)}
+                statusOptions={profileOptions.statusOptions}
+                onViewAvatar={setLightboxAvatarUser}
+            />
+
+            <AvatarLightbox
+                user={lightboxAvatarUser}
+                onClose={() => setLightboxAvatarUser(null)}
+            />
         </div>
     );
 }

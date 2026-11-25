@@ -1,14 +1,32 @@
 import React from 'react';
 import { ArrowLeft, MoreVertical, Phone, Video } from 'lucide-react';
 import { formatLastSeen } from '../../utils/date';
+import UserAvatar from '../common/UserAvatar';
+
+const STATUS_TEXT_CLASSES = {
+  available: 'text-emerald-500 dark:text-emerald-400',
+  away: 'text-amber-500 dark:text-amber-400',
+  busy: 'text-rose-500 dark:text-rose-400',
+  offline: 'text-slate-500 dark:text-slate-400',
+};
 
 const ChatHeader = ({
   selectedUser = null,
   isOnline = false,
   isTyping = false,
   onBack = () => { },
+  onOpenContactProfile = () => { },
+  statusOptions = [],
 }) => {
   if (!selectedUser) return null;
+
+  const statusKey = selectedUser?.customStatus || 'available';
+  const matchedOption = statusOptions.find((opt) => opt.value === statusKey);
+  const onlineLabel =
+    statusKey === 'available'
+      ? 'Online'
+      : `Online • ${matchedOption?.label || statusKey}`;
+  const statusTextClass = STATUS_TEXT_CLASSES[statusKey] || STATUS_TEXT_CLASSES.available;
 
   return (
     <div className="h-16 px-3 sm:px-6 border-b border-slate-200 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/60 backdrop-blur-md flex items-center justify-between shrink-0 transition-colors duration-200 gap-2 w-full min-w-0 max-w-full overflow-hidden">
@@ -22,40 +40,43 @@ const ChatHeader = ({
           <ArrowLeft size={19} />
         </button>
 
-        {/* Contact Avatar */}
-        <div className="relative shrink-0">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center font-bold text-white text-xs uppercase shadow-md shadow-indigo-500/20">
-            {selectedUser?.fullname?.slice(0, 2) || selectedUser?.username?.slice(0, 2) || 'US'}
-          </div>
-          <span
-            className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-slate-950 ${isOnline ? 'bg-emerald-500 shadow-sm shadow-emerald-500/50' : 'bg-slate-400 dark:bg-slate-600'
-              }`}
+        {/* Clickable Contact Info Area */}
+        <button
+          type="button"
+          onClick={onOpenContactProfile}
+          title="View contact info"
+          className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 text-left cursor-pointer group rounded-xl py-1 pr-2 hover:bg-slate-100/60 dark:hover:bg-slate-800/40 transition-colors"
+        >
+          <UserAvatar
+            user={selectedUser}
+            sizeClass="w-9 h-9 sm:w-10 sm:h-10 text-xs"
+            showStatus
+            isOnline={isOnline}
           />
-        </div>
 
-        {/* Contact Details */}
-        <div className="min-w-0 flex-1">
-          <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 leading-tight truncate">
-            {selectedUser?.fullname}
-          </h2>
-          {isTyping ? (
-            <p className="text-xs text-emerald-500 dark:text-emerald-400 font-medium tracking-wide animate-pulse mt-0.5 truncate">
-              Typing...
-            </p>
-          ) : (
-            <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
-              {isOnline ? (
-                <p className="text-xs text-emerald-500 dark:text-emerald-400 font-medium truncate">
-                  Online
-                </p>
-              ) : (
-                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                  {formatLastSeen(selectedUser?.lastSeen)}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 leading-tight truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+              {selectedUser?.fullname}
+            </h2>
+            {isTyping ? (
+              <p className="text-xs text-emerald-500 dark:text-emerald-400 font-medium tracking-wide animate-pulse mt-0.5 truncate">
+                Typing...
+              </p>
+            ) : (
+              <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+                {isOnline ? (
+                  <p className={`text-xs font-medium truncate ${!matchedOption?.label && statusKey !== 'available' ? 'capitalize ' : ''}${statusTextClass}`}>
+                    {onlineLabel}
+                  </p>
+                ) : (
+                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                    {formatLastSeen(selectedUser?.lastSeen)}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </button>
       </div>
 
       {/* Action Buttons (Pure UI Icons) */}

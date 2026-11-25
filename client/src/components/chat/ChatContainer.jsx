@@ -40,6 +40,8 @@ const ChatContainer = ({
   onStartEdit = () => { },
   onCancelEdit = () => { },
   onDeleteMessage = () => { },
+  onOpenContactProfile = () => { },
+  statusOptions = [],
 }) => {
   const messagesEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
@@ -236,6 +238,8 @@ const ChatContainer = ({
         isOnline={isOnline}
         isTyping={isTyping}
         onBack={onBack}
+        onOpenContactProfile={onOpenContactProfile}
+        statusOptions={statusOptions}
       />
 
       {/* Messages Scrollable Area Wrapper */}

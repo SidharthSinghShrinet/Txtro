@@ -1,6 +1,7 @@
 import React from 'react';
-import { Search, LogOut, MessageSquare, Users, Sun, Moon, Image as ImageIcon, FileText, Mic, FolderOpen, Ban } from 'lucide-react';
+import { Search, LogOut, MessageSquare, Users, Sun, Moon, Image as ImageIcon, FileText, Mic, FolderOpen, Ban, Pencil } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import UserAvatar from '../common/UserAvatar';
 
 const Sidebar = ({
   currentUser = null,
@@ -11,6 +12,8 @@ const Sidebar = ({
   searchQuery = '',
   onSearchChange = () => { },
   onLogout = () => { },
+  onOpenProfile = () => { },
+  onViewAvatar = () => { },
   draftsMap = {},
 }) => {
   const { theme, toggleTheme } = useTheme();
@@ -48,23 +51,33 @@ const Sidebar = ({
   return (
     <aside className="w-full md:w-80 lg:w-96 h-full flex flex-col bg-white/80 dark:bg-slate-900/40 border-r border-slate-200 dark:border-slate-800/80 backdrop-blur-xl shrink-0 transition-colors duration-200">
       {/* Top Header: Current User & Actions */}
-      <div className="p-4 border-b border-slate-200 dark:border-slate-800/80 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center font-bold text-white shadow-md shadow-indigo-500/20 uppercase">
-              {currentUser?.fullname?.slice(0, 2) || 'ME'}
-            </div>
-            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-950" />
+      <div className="p-4 border-b border-slate-200 dark:border-slate-800/80 flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={onOpenProfile}
+          title="Edit Profile"
+          className="flex items-center gap-3 min-w-0 flex-1 text-left group rounded-xl p-1 -ml-1 hover:bg-slate-100/80 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
+        >
+          <div className="relative shrink-0">
+            <UserAvatar
+              user={currentUser}
+              sizeClass="w-10 h-10 text-xs"
+              showStatus
+              isOnline
+            />
+            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-indigo-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
+              <Pencil size={9} />
+            </span>
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">
               {currentUser?.fullname || 'My Profile'}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-              @{currentUser?.username || 'user'}
+              {currentUser?.bio?.trim() || `@${currentUser?.username || 'user'}`}
             </p>
           </div>
-        </div>
+        </button>
 
         {/* Action Buttons: Theme Toggle & Logout */}
         <div className="flex items-center gap-1">
@@ -136,21 +149,28 @@ const Sidebar = ({
                   }
                 `}
               >
-                {/* Avatar with Online Status */}
-                <div className="relative shrink-0">
-                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold text-xs uppercase
-                    ${isSelected
-                      ? 'bg-gradient-to-tr from-indigo-500 to-violet-500 text-white shadow-md shadow-indigo-500/25'
-                      : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700/60'
+                {/* Avatar with Online Status (Click avatar with photo to open Lightbox) */}
+                <div
+                  onClick={(e) => {
+                    if (contact.avatar || contact.avatarThumb) {
+                      e.stopPropagation();
+                      onViewAvatar(contact);
                     }
-                  `}>
-                    {contact.fullname?.slice(0, 2) || contact.username?.slice(0, 2) || 'US'}
-                  </div>
-
-                  <span
-                    className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-slate-900 transition-colors ${isOnline ? 'bg-emerald-500 shadow-sm shadow-emerald-500/50' : 'bg-slate-400 dark:bg-slate-600'
-                      }`}
-                    title={isOnline ? 'Online' : 'Offline'}
+                  }}
+                  title={contact.avatar || contact.avatarThumb ? 'View profile photo' : undefined}
+                  className={contact.avatar || contact.avatarThumb ? 'cursor-zoom-in rounded-xl transition-transform hover:scale-105' : ''}
+                >
+                  <UserAvatar
+                    user={contact}
+                    sizeClass="w-11 h-11 text-xs"
+                    gradientClass={
+                      isSelected
+                        ? 'bg-gradient-to-tr from-indigo-500 to-violet-500 text-white shadow-md shadow-indigo-500/25'
+                        : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700/60'
+                    }
+                    showStatus
+                    isOnline={isOnline}
+                    dotBorderClass="border-2 border-white dark:border-slate-900"
                   />
                 </div>
 

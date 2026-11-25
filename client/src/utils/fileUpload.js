@@ -1,11 +1,12 @@
 import imageCompression from "browser-image-compression";
 import { apiInstance } from "../api/axiosInstance";
+import { getAvatarPresignedUrlApi } from "../api/api";
 
 /**
  * Compresses an image file on the client using a Web Worker.
  * Preserves documents, audio, etc., without compression.
  */
-export const compressImageIfNeeded = async (file) => {
+export const compressImageIfNeeded = async (file, customOptions = {}) => {
     if (!file.type.startsWith("image/")) {
         return file;   // Documents and audio pass through uncompressed
     }
@@ -20,6 +21,7 @@ export const compressImageIfNeeded = async (file) => {
         maxWidthOrHeight: 1600,  // Max dimension: 1600px (crisp for all phone and desktop screens)
         useWebWorker: true,  // Offloads compression to a background thread (zero UI stutter)
         fileType: 'image/webp',  // Converts to modern high-efficiency WebP
+        ...customOptions,
     };
 
     try {
@@ -177,5 +179,51 @@ export const uploadFilesDirectlyToCloud = async (files = [], onOverallProgress =
     return {
         attachments,
         uploadIntentId: currentUploadIntentId,
+    };
+};
+
+/**
+ * Compresses and uploads dual-size user avatars (512px Full + 96px Thumb)
+ * directly to OCI in parallel via Pre-Signed URLs.
+ * Returns { avatar, avatarKey, avatarThumb, avatarThumbKey, uploadIntentId }.
+ */
+export const uploadAvatarDirectlyToCloud = async (file) => {
+    // 1. Generate 512px full and 96px sidebar thumbnail in parallel on Web Workers
+    const [fullFile, thumbFile] = await Promise.all([
+        compressImageIfNeeded(file, {
+            maxSizeMB: 0.25,
+            maxWidthOrHeight: 512,
+        }),
+        compressImageIfNeeded(file, {
+            maxSizeMB: 0.02,
+            maxWidthOrHeight: 96,
+        }),
+    ]);
+
+    const mimeType = fullFile.type || file.type || "image/webp";
+    const baseName = file.name.replace(/\.[^.]+$/, "");
+    const ext = mimeType === "image/webp" ? "webp" : mimeType === "image/png" ? "png" : "jpg";
+    const uploadFileName = `avatar-${baseName}.${ext}`;
+
+    // 2. Request both pre-signed PUT URLs under 1 UploadIntent
+    const ticketRes = await getAvatarPresignedUrlApi(uploadFileName, mimeType);
+    const { full, thumb, uploadIntentId } = ticketRes?.data?.data || {};
+
+    if (!full?.presignedUrl || !full?.publicFileUrl || !full?.objectKey || !thumb?.presignedUrl) {
+        throw new Error("Failed to get avatar upload URLs from server");
+    }
+
+    // 3. Upload both sizes directly to OCI in parallel
+    await Promise.all([
+        uploadSingleFileWithProgress(full.presignedUrl, fullFile, fullFile.type || mimeType),
+        uploadSingleFileWithProgress(thumb.presignedUrl, thumbFile, thumbFile.type || mimeType),
+    ]);
+
+    return {
+        avatar: full.publicFileUrl,
+        avatarKey: full.objectKey,
+        avatarThumb: thumb.publicFileUrl,
+        avatarThumbKey: thumb.objectKey,
+        uploadIntentId,
     };
 };

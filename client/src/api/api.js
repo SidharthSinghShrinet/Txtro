@@ -55,4 +55,20 @@ export const getLinkPreviewApi = (url) => {
     return apiInstance.get(`/messages/link-preview?url=${encodeURIComponent(url)}`);
 }
 
+export const getAvatarPresignedUrlApi = (originalFileName, mimeType) => {
+    return apiInstance.post("/users/avatar-presigned-url", { originalFileName, mimeType });
+}
+
+export const updateProfileApi = (profileData) => {
+    return apiInstance.put("/users/profile", profileData);
+}
+
+export const abortAvatarUploadApi = (payload) => {
+    return apiInstance.post("/users/avatar-abort", payload);
+}
+
+export const getProfileOptionsApi = () => {
+    return apiInstance.get("/users/profile-options");
+}
+
 

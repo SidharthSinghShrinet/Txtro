@@ -31,6 +31,33 @@ const userModel = new mongoose.Schema(
       required: true,
       minlength: 6,
     },
+    avatar: {
+      type: String,
+      default: "",   // Public OCI URL (512px)
+    },
+    avatarKey: {
+      type: String,
+      default: ""  // OCI unique key (512px)
+    },
+    avatarThumb: {
+      type: String,
+      default: ""    // Public OCI URL (96px sidebar thumbnail)
+    },
+    avatarThumbKey: {
+      type: String,
+      default: ""   // OCI unique key (96px)
+    },
+    bio: {
+      type: String,
+      maxlength: 120,
+      default: "Hey there! I am using Txtro.",
+      trim: true
+    },
+    customStatus: {
+      type: String,
+      enum: ["available", "busy", "away", "offline"],
+      default: "available"
+    }
   },
   {
     timestamps: true,
