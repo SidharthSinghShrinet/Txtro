@@ -481,4 +481,57 @@ const getLinkPreview = expressAsyncHandler(async (req, res) => {
     new ApiResponse(200, true, "Link preview fetched", preview).send(res);
 });
 
-export { sendMessage, getMessage, getUploadUrl, abortUpload, toggleReaction, deleteForMe, deleteForEveryone, editMessage, getLinkPreview };
+//& @desc    Global search across all user's conversations
+//& @route   GET /api/v1/messages/search?q=keyword
+//& @access  Private
+
+const getSearchMessages = expressAsyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    const rawQuery = (req.query.q || "").trim();
+
+    // Enforce min 2 chars & max 64 chars
+    if (rawQuery.length < 2) {
+        return new ApiResponse(200, true, "Query too short", []).send(res);
+    }
+
+    // 1. Escape regex metacharacters to prevent ReDoS attacks (e.g. C++, $100, (test))
+    const safeQuery = rawQuery.slice(0, 64).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const searchRegex = new RegExp(safeQuery, "i");
+
+    // 2. Scope strictly to conversations this user belongs to (uses participants index)
+    const userConversations = await conversationModel
+        .find({ participants: userId })
+        .select("_id")
+        .lean();
+
+    if (userConversations.length === 0) {
+        return new ApiResponse(200, true, "No conversations found", []).send(res);
+    }
+
+    const conversationIds = userConversations.map((conv) => conv._id);
+
+    // 3. Indexed search: excludes deleted messages, caps execution at 2000ms, returns max 20
+    const matchedMessages = await messageModel
+        .find({
+            conversationId: { $in: conversationIds },
+            isDeletedForEveryone: { $ne: true },
+            deletedFor: { $ne: userId },
+            $or: [
+                { message: searchRegex },
+                { "attachments.fileName": searchRegex },
+                { "linkPreview.title": searchRegex },
+                { "linkPreview.description": searchRegex },
+                { "linkPreview.siteName": searchRegex },
+                { "linkPreview.url": searchRegex },
+            ]
+        })
+        .sort({ createdAt: -1 })
+        .limit(20)
+        .select("_id conversationId senderId receiverId message messageType attachments.fileName linkPreview.title linkPreview.description linkPreview.siteName linkPreview.url createdAt")
+        .maxTimeMS(2000)
+        .lean();
+
+    new ApiResponse(200, true, "Message searched successfully", matchedMessages).send(res);
+});
+
+export { sendMessage, getMessage, getUploadUrl, abortUpload, toggleReaction, deleteForMe, deleteForEveryone, editMessage, getLinkPreview, getSearchMessages };

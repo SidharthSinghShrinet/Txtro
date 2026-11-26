@@ -1,22 +1,38 @@
-import React from 'react';
-import { Search, LogOut, MessageSquare, Users, Sun, Moon, Image as ImageIcon, FileText, Mic, FolderOpen, Ban, Pencil } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Search, LogOut, MessageSquare, Users, Sun, Moon, Image as ImageIcon, FileText, Mic, FolderOpen, Ban, Pencil, X } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import UserAvatar from '../common/UserAvatar';
+import GlobalSearchResults from './GlobalSearchResults';
 
 const Sidebar = ({
   currentUser = null,
   users = [],
+  allUsers = [],
   selectedUser = null,
   onSelectUser = () => { },
   onlineUsers = [],
   searchQuery = '',
   onSearchChange = () => { },
+  onSearchKeyDown = () => { },
+  onClearSearch = () => { },
+  globalSearchResults = [],
+  isSearchingMessages = false,
+  onSelectMessageResult = () => { },
   onLogout = () => { },
   onOpenProfile = () => { },
   onViewAvatar = () => { },
   draftsMap = {},
 }) => {
   const { theme, toggleTheme } = useTheme();
+
+  const usersMap = useMemo(() => {
+    const map = {};
+    const source = allUsers.length > 0 ? allUsers : users;
+    source.forEach((u) => {
+      if (u?._id) map[u._id] = u;
+    });
+    return map;
+  }, [allUsers, users]);
 
   const formatLastMessageTime = (timestamp) => {
     if (!timestamp) return '';
@@ -109,9 +125,20 @@ const Sidebar = ({
             type="text"
             value={searchQuery}
             onChange={onSearchChange}
-            placeholder="Search contacts..."
-            className="w-full h-10 pl-10 pr-4 text-xs font-medium text-slate-800 dark:text-slate-100 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 rounded-xl outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 transition-all"
+            onKeyDown={onSearchKeyDown}
+            placeholder="Search contacts or messages..."
+            className="w-full h-10 pl-10 pr-8 text-xs font-medium text-slate-800 dark:text-slate-100 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 rounded-xl outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 transition-all"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={onClearSearch}
+              title="Clear search"
+              className="absolute right-2.5 p-0.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -266,6 +293,17 @@ const Sidebar = ({
             );
           })
         )}
+
+        {/* Feature 16: Global Message Search Results */}
+        <GlobalSearchResults
+          searchQuery={searchQuery}
+          results={globalSearchResults}
+          isSearching={isSearchingMessages}
+          currentUserId={currentUser?._id}
+          usersMap={usersMap}
+          formatTime={formatLastMessageTime}
+          onSelectResult={onSelectMessageResult}
+        />
       </div>
     </aside>
   );

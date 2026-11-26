@@ -71,4 +71,8 @@ export const getProfileOptionsApi = () => {
     return apiInstance.get("/users/profile-options");
 }
 
+export const searchMessagesApi = (query, signal) => {
+    return apiInstance.get(`/messages/search?q=${encodeURIComponent(query)}`, { signal });
+}
+
 

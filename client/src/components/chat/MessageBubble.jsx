@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, lazy, Suspense } from 'react';
 import { Check, CheckCheck, FileText, Download, Clock, AlertCircle, X, Smile, Plus, Loader2, Reply, Image as ImageIcon, Mic, Trash2, Ban, Pencil, ExternalLink } from 'lucide-react';
 import VoiceNotePlayer from './VoiceNotePlayer';
+import HighlightText from '../common/HighlightText';
 
 // Lazy-loaded full emoji picker for custom reactions (WhatsApp-style '+' button)
 const EmojiPicker = lazy(() => import('emoji-picker-react'));
@@ -22,6 +23,8 @@ const MessageBubble = ({
   isEdited = false,
   linkPreview = null,
   isHighlighted = false,
+  searchQuery = '',
+  isActiveSearchMatch = false,
   currentUserId = null,
   onToggleReaction = () => { },
   onSelectReply = () => { },
@@ -175,12 +178,14 @@ const MessageBubble = ({
 
   const hasReactions = Object.keys(reactionGroups).length > 0;
 
-  // Auto-linkify plain URLs in message text
+  // Auto-linkify plain URLs in message text + highlight active search terms
   const renderMessageContent = (text) => {
     if (!text || typeof text !== 'string') return text;
     const urlRegex = /(https?:\/\/[^\s]+)/gi;
     const parts = text.split(urlRegex);
-    if (parts.length === 1) return text;
+    if (parts.length === 1) {
+      return <HighlightText text={text} query={searchQuery} isActiveMatch={isActiveSearchMatch} />;
+    }
 
     return parts.map((part, idx) => {
       if (part.match(urlRegex)) {
@@ -196,11 +201,18 @@ const MessageBubble = ({
               : 'text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium'
               }`}
           >
-            {part}
+            <HighlightText text={part} query={searchQuery} isActiveMatch={isActiveSearchMatch} />
           </a>
         );
       }
-      return part;
+      return (
+        <HighlightText
+          key={idx}
+          text={part}
+          query={searchQuery}
+          isActiveMatch={isActiveSearchMatch}
+        />
+      );
     });
   };
 
@@ -707,7 +719,7 @@ const MessageBubble = ({
                 {/* Title */}
                 {linkPreview.title && (
                   <h4 className="font-bold text-xs leading-snug line-clamp-2 mb-1">
-                    {linkPreview.title}
+                    <HighlightText text={linkPreview.title} query={searchQuery} isActiveMatch={isActiveSearchMatch} />
                   </h4>
                 )}
 

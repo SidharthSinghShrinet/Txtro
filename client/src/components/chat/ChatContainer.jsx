@@ -1,9 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ChatHeader from './ChatHeader';
+import InChatSearchBar from './InChatSearchBar';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
 import DateSeparator from './DateSeparator';
 import { isSameDay } from '../../utils/date';
+import { useInChatSearch } from '../../hooks/useInChatSearch';
 import { MessageSquareDashed, UploadCloud, ChevronDown, Trash2 } from 'lucide-react';
 
 // yet-another-react-lightbox + plugins & styles
@@ -42,6 +44,8 @@ const ChatContainer = ({
   onDeleteMessage = () => { },
   onOpenContactProfile = () => { },
   statusOptions = [],
+  pendingJumpMessageId = null,
+  onClearPendingJump = () => { },
 }) => {
   const messagesEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
@@ -55,11 +59,11 @@ const ChatContainer = ({
   const isNearBottomRef = useRef(true);
   const prevMessagesLengthRef = useRef(messages.length);
 
-  // Jump-to-message Highlight Pulse State (Phase 11)
+  // Jump-to-message Highlight Pulse State (Phase 11 & Phase 16)
   const [highlightedMessageId, setHighlightedMessageId] = useState(null);
   const highlightTimerRef = useRef(null);
 
-  const handleJumpToMessage = (targetMessageId) => {
+  const handleJumpToMessage = useCallback((targetMessageId) => {
     if (!targetMessageId) return;
     const el = document.getElementById(`msg-${targetMessageId}`);
     if (el) {
@@ -70,7 +74,31 @@ const ChatContainer = ({
         setHighlightedMessageId(null);
       }, 2000);
     }
-  };
+  }, []);
+
+  const handleClearHighlight = useCallback(() => {
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    setHighlightedMessageId(null);
+  }, []);
+
+  // Feature 16: In-Chat Search Hook (0 API calls — pure in-memory)
+  const {
+    isSearchOpen,
+    searchQuery: inChatSearchQuery,
+    matchedCount,
+    activeMatchPosition,
+    activeMessageId,
+    openSearch,
+    closeSearch,
+    handleSearchChange,
+    goToOlderMatch,
+    goToNewerMatch,
+  } = useInChatSearch({
+    messages,
+    conversationKey: selectedUser?._id,
+    onJumpToMessage: handleJumpToMessage,
+    onClearHighlight: handleClearHighlight,
+  });
 
   // YARL Lightbox Carousel State
   const [lightboxIndex, setLightboxIndex] = useState(-1);
@@ -126,22 +154,45 @@ const ChatContainer = ({
     }, 120);
   };
 
-  // Auto-scroll when switching contacts
+  const pendingJumpRef = useRef(pendingJumpMessageId);
+  useEffect(() => {
+    pendingJumpRef.current = pendingJumpMessageId;
+  }, [pendingJumpMessageId]);
+
+  // Auto-scroll when switching contacts (skip if jumping to a global search result)
   useEffect(() => {
     setNewMessagesCount(0);
     setShowScrollBottom(false);
     isNearBottomRef.current = true;
     prevMessagesLengthRef.current = 0;
+    if (pendingJumpRef.current) return;
     const timer = setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
     }, 40);
     return () => clearTimeout(timer);
   }, [selectedUser?._id]);
 
+  // Jump directly to a message selected from Global Sidebar Search once messages load
+  useEffect(() => {
+    if (!pendingJumpMessageId || messages.length === 0) return;
+    const exists = messages.some((m) => m._id === pendingJumpMessageId);
+    if (!exists) return;
+
+    const timer = setTimeout(() => {
+      handleJumpToMessage(pendingJumpMessageId);
+      onClearPendingJump();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [pendingJumpMessageId, messages, handleJumpToMessage, onClearPendingJump]);
+
   // Intelligent auto-scroll for new messages & typing
   useEffect(() => {
     const prevLength = prevMessagesLengthRef.current;
     prevMessagesLengthRef.current = messages.length;
+
+    if (pendingJumpMessageId && messages.some((m) => m._id === pendingJumpMessageId)) {
+      return;
+    }
 
     if (messages.length > prevLength && messages.length > 0) {
       const lastMsg = messages[messages.length - 1];
@@ -158,7 +209,7 @@ const ChatContainer = ({
       // First load of messages for this conversation
       messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
     }
-  }, [messages, currentUser?._id]);
+  }, [messages, currentUser?._id, pendingJumpMessageId]);
 
   useEffect(() => {
     if (isTyping && isNearBottomRef.current) {
@@ -239,7 +290,21 @@ const ChatContainer = ({
         isTyping={isTyping}
         onBack={onBack}
         onOpenContactProfile={onOpenContactProfile}
+        onToggleSearch={() => (isSearchOpen ? closeSearch() : openSearch())}
+        isSearchOpen={isSearchOpen}
         statusOptions={statusOptions}
+      />
+
+      {/* Feature 16: In-Chat Search Bar */}
+      <InChatSearchBar
+        isOpen={isSearchOpen}
+        searchQuery={inChatSearchQuery}
+        matchedCount={matchedCount}
+        activeMatchPosition={activeMatchPosition}
+        onSearchChange={handleSearchChange}
+        onOlderMatch={goToOlderMatch}
+        onNewerMatch={goToNewerMatch}
+        onClose={closeSearch}
       />
 
       {/* Messages Scrollable Area Wrapper */}
@@ -283,6 +348,8 @@ const ChatContainer = ({
                     isEdited={msg.isEdited || false}
                     linkPreview={msg.linkPreview || null}
                     isHighlighted={highlightedMessageId === msg._id}
+                    searchQuery={inChatSearchQuery}
+                    isActiveSearchMatch={activeMessageId === msg._id}
                     currentUserId={currentUser?._id}
                     onToggleReaction={onToggleReaction}
                     onSelectReply={() => onSelectReply(msg)}

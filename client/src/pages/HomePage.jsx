@@ -7,6 +7,7 @@ import ContactProfileModal from '../components/chat/ContactProfileModal';
 import AvatarLightbox from '../components/common/AvatarLightbox';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
+import { useGlobalMessageSearch } from '../hooks/useGlobalMessageSearch';
 import toast from 'react-hot-toast';
 import { getAllUsersWithMetadataApi, getMessagesApi, sendMessageApi, toggleReactionApi, deleteForMeApi, deleteForEveryoneApi, editMessageApi, updateProfileApi, abortAvatarUploadApi, getProfileOptionsApi } from '../api/api';
 import { useEffect } from 'react';
@@ -28,7 +29,14 @@ function HomePage() {
 
     // Pure UI state placeholders (You can replace/wire with your API data)
     const [selectedUser, setSelectedUser] = useState(null);
+    const [pendingJumpMessageId, setPendingJumpMessageId] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const {
+        globalSearchResults,
+        isSearchingMessages,
+        triggerImmediateSearch,
+        invalidateSearchCache,
+    } = useGlobalMessageSearch(searchQuery);
     const [messageInput, setMessageInput] = useState('');
     const [replyingToMessage, setReplyingToMessage] = useState(null);
     const [editingMessage, setEditingMessage] = useState(null);
@@ -433,7 +441,14 @@ function HomePage() {
         setSelectedFiles([]);
         setReplyingToMessage(null);
 
-        // Clear active draft from IndexedDB & memory
+        // Invalidate Global Search cache since a new outgoing message is being sent
+        invalidateSearchCache();
+
+        // Clear pending debounce timer + active draft from IndexedDB & memory
+        if (draftDebounceRef.current) {
+            clearTimeout(draftDebounceRef.current);
+            draftDebounceRef.current = null;
+        }
         if (selectedUser) {
             deleteDraftFromStorage(selectedUser._id);
             setDraftsMap((prev) => {
@@ -770,6 +785,7 @@ function HomePage() {
     // Handle Delete Message (Phase 12: Dual Deletion Modes)
     const handleDeleteMessage = async (messageId, deleteType) => {
         if (!messageId || !selectedUser) return;
+        invalidateSearchCache();
 
         const previousMessages = [...messages];
         const targetMsg = messages.find((m) => m._id === messageId);
@@ -836,6 +852,7 @@ function HomePage() {
         if (!socket) return;
 
         const handleNewMessage = (incomingMessage) => {
+            invalidateSearchCache();
             const isChatOpen = selectedUser && selectedUser._id === incomingMessage.senderId;
 
             if (isChatOpen) {
@@ -931,6 +948,7 @@ function HomePage() {
 
         // Real-time message deletion sync (Phase 12)
         const handleMessageDeleted = ({ messageId, deleteType }) => {
+            invalidateSearchCache();
             if (deleteType === "everyone") {
                 setMessages((prevMessages) =>
                     prevMessages.map((msg) =>
@@ -961,6 +979,7 @@ function HomePage() {
 
         // Real-time message edit sync (Phase 13 & 14)
         const handleMessageEdited = ({ messageId, conversationId, message: newText, isEdited, editedAt, linkPreview }) => {
+            invalidateSearchCache();
             setMessages((prevMessages) =>
                 prevMessages.map((msg) =>
                     msg._id === messageId
@@ -1099,6 +1118,12 @@ function HomePage() {
         }
     };
 
+    const handleSelectGlobalSearchResult = (msg, contact) => {
+        if (!contact || !msg?._id) return;
+        handleSelectUser(contact);
+        setPendingJumpMessageId(msg._id);
+    };
+
     const filteredUsers = users.filter((u) => u?.fullname?.toLowerCase().includes(searchQuery.toLowerCase()) || u?.username?.toLowerCase().includes(searchQuery.toLowerCase()))
 
     return (
@@ -1116,11 +1141,21 @@ function HomePage() {
                     <Sidebar
                         currentUser={user}
                         users={filteredUsers}
+                        allUsers={users}
                         selectedUser={selectedUser}
                         onSelectUser={handleSelectUser}
                         onlineUsers={onlineUsers || []}
                         searchQuery={searchQuery}
                         onSearchChange={(e) => setSearchQuery(e.target.value)}
+                        onSearchKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                triggerImmediateSearch();
+                            }
+                        }}
+                        onClearSearch={() => setSearchQuery('')}
+                        globalSearchResults={globalSearchResults}
+                        isSearchingMessages={isSearchingMessages}
+                        onSelectMessageResult={handleSelectGlobalSearchResult}
                         onLogout={logout}
                         onOpenProfile={handleOpenProfileModal}
                         onViewAvatar={setLightboxAvatarUser}
@@ -1192,6 +1227,8 @@ function HomePage() {
                             onCancelEdit={handleCancelEdit}
                             onOpenContactProfile={() => setIsContactModalOpen(true)}
                             statusOptions={profileOptions.statusOptions}
+                            pendingJumpMessageId={pendingJumpMessageId}
+                            onClearPendingJump={() => setPendingJumpMessageId(null)}
                             onCancelUpload={() => {
                                 if (abortUploadRef.current) {
                                     abortUploadRef.current();

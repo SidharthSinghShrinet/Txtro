@@ -1,5 +1,5 @@
 import Router from "express";
-import { abortUpload, getMessage, getUploadUrl, sendMessage, toggleReaction, deleteForMe, deleteForEveryone, editMessage, getLinkPreview } from "../controllers/message.controller.js";
+import { abortUpload, getMessage, getUploadUrl, sendMessage, toggleReaction, deleteForMe, deleteForEveryone, editMessage, getLinkPreview, getSearchMessages } from "../controllers/message.controller.js";
 import authenticate from "../middlewares/auth.middleware.js";
 const router = Router();
 
@@ -44,6 +44,12 @@ router.post("/send/:id", authenticate, sendMessage);
 //& @route   GET /api/v1/messages/link-preview
 //& @access  Private
 router.get("/link-preview", authenticate, getLinkPreview);
+
+
+//& @desc    Global search across all user's conversations
+//& @route   GET /api/v1/messages/search?q=keyword
+//& @access  Private
+router.get("/search", authenticate, getSearchMessages)
 
 //& @desc    Getting messages between two users
 //& @route   GET /api/v1/messages/:id
