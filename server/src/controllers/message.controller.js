@@ -7,6 +7,7 @@ import { getReceiverSocketIds, io } from "../socket/socket.js";
 import { deleteObjectsFromOCI, generatePreSignedUploadUrl } from "../utils/ociStorage.util.js";
 import uploadIntentModel from "../models/uploadIntent.model.js";
 import { extractLinkPreview } from "../utils/linkPreview.js";
+import mongoose from "mongoose";
 
 
 const getUploadUrl = expressAsyncHandler(async (req, res) => {
@@ -481,17 +482,23 @@ const getLinkPreview = expressAsyncHandler(async (req, res) => {
     new ApiResponse(200, true, "Link preview fetched", preview).send(res);
 });
 
-//& @desc    Global search across all user's conversations
-//& @route   GET /api/v1/messages/search?q=keyword
+
+//& @desc    Global search across all user's conversations (Cursor-Based Pagination)
+//& @route   GET /api/v1/messages/search?q=keyword&before=ISO&beforeId=ObjectId&limit=20
 //& @access  Private
 
 const getSearchMessages = expressAsyncHandler(async (req, res) => {
     const userId = req.user._id;
     const rawQuery = (req.query.q || "").trim();
-
+    const { before, beforeId } = req.query;
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 20));
     // Enforce min 2 chars & max 64 chars
     if (rawQuery.length < 2) {
-        return new ApiResponse(200, true, "Query too short", []).send(res);
+        return new ApiResponse(200, true, "Query too short", {
+            results: [],
+            hasMore: false,
+            nextCursor: null
+        }).send(res);
     }
 
     // 1. Escape regex metacharacters to prevent ReDoS attacks (e.g. C++, $100, (test))
@@ -505,33 +512,71 @@ const getSearchMessages = expressAsyncHandler(async (req, res) => {
         .lean();
 
     if (userConversations.length === 0) {
-        return new ApiResponse(200, true, "No conversations found", []).send(res);
+        return new ApiResponse(200, true, "No conversations found", {
+            results: [],
+            hasMore: false,
+            nextCursor: null,
+        }).send(res);
     }
 
     const conversationIds = userConversations.map((conv) => conv._id);
 
-    // 3. Indexed search: excludes deleted messages, caps execution at 2000ms, returns max 20
+    // 3. Build filter with $and so search $or and cursor $or never collide
+    const queryFilter = {
+        conversationId: { $in: conversationIds },
+        isDeletedForEveryone: { $ne: true },
+        deletedFor: { $ne: userId },
+        $and: [
+            {
+                $or: [
+                    { message: searchRegex },
+                    { "attachments.fileName": searchRegex },
+                    { "linkPreview.title": searchRegex },
+                    { "linkPreview.description": searchRegex },
+                    { "linkPreview.siteName": searchRegex },
+                    { "linkPreview.url": searchRegex },
+                ]
+            }
+        ]
+    }
+    // 4. Apply 2-field cursor (createdAt, _id) if loading older pages
+    if (before && beforeId && mongoose.Types.ObjectId.isValid(beforeId)) {
+        const cursorDate = new Date(before);
+        if (!Number.isNaN(cursorDate.getTime())) {
+            queryFilter.$and.push({
+                $or: [
+                    { createdAt: { $lt: cursorDate } },
+                    {
+                        createdAt: cursorDate,
+                        _id: { $lt: new mongoose.Types.ObjectId(beforeId) }
+                    }
+                ]
+            })
+        }
+    }
+
+    // 5. Fetch limit + 1 to detect hasMore in 1 single query
     const matchedMessages = await messageModel
-        .find({
-            conversationId: { $in: conversationIds },
-            isDeletedForEveryone: { $ne: true },
-            deletedFor: { $ne: userId },
-            $or: [
-                { message: searchRegex },
-                { "attachments.fileName": searchRegex },
-                { "linkPreview.title": searchRegex },
-                { "linkPreview.description": searchRegex },
-                { "linkPreview.siteName": searchRegex },
-                { "linkPreview.url": searchRegex },
-            ]
-        })
-        .sort({ createdAt: -1 })
-        .limit(20)
+        .find(queryFilter)
+        .sort({ createdAt: -1, _id: - 1 })
+        .limit(limit + 1)
         .select("_id conversationId senderId receiverId message messageType attachments.fileName linkPreview.title linkPreview.description linkPreview.siteName linkPreview.url createdAt")
         .maxTimeMS(2000)
         .lean();
 
-    new ApiResponse(200, true, "Message searched successfully", matchedMessages).send(res);
+    const hasMore = matchedMessages.length > limit;
+    const results = hasMore ? matchedMessages.slice(0, limit) : matchedMessages;
+    const lastIem = results[results.length - 1];
+
+    const nextCursor = hasMore && lastIem
+        ? { before: lastIem.createdAt, beforeId: lastIem._id }
+        : null;
+
+    new ApiResponse(200, true, "Message searched successfully", {
+        results,
+        hasMore,
+        nextCursor,
+    }).send(res);
 });
 
 export { sendMessage, getMessage, getUploadUrl, abortUpload, toggleReaction, deleteForMe, deleteForEveryone, editMessage, getLinkPreview, getSearchMessages };

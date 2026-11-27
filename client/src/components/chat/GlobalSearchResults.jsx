@@ -11,6 +11,9 @@ const GlobalSearchResults = ({
   searchQuery = '',
   results = [],
   isSearching = false,
+  hasMore = false,
+  isLoadingMore = false,
+  onLoadMore = () => { },
   currentUserId = null,
   usersMap = {},
   formatTime = () => '',
@@ -83,6 +86,20 @@ const GlobalSearchResults = ({
               </button>
             );
           })}
+
+          {hasMore && (
+            <div className="pt-2 pb-1 flex justify-center">
+              <button
+                type="button"
+                onClick={onLoadMore}
+                disabled={isLoadingMore}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50/80 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 border border-indigo-200/70 dark:border-indigo-500/20 flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-60"
+              >
+                {isLoadingMore && <Loader2 size={13} className="animate-spin" />}
+                {isLoadingMore ? 'Loading...' : 'Load older messages'}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

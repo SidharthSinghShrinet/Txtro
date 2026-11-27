@@ -71,8 +71,16 @@ export const getProfileOptionsApi = () => {
     return apiInstance.get("/users/profile-options");
 }
 
-export const searchMessagesApi = (query, signal) => {
-    return apiInstance.get(`/messages/search?q=${encodeURIComponent(query)}`, { signal });
+export const searchMessagesApi = (query, options = {}, signal) => {
+    const params = new URLSearchParams({ q: query });
+    if (options?.before && options?.beforeId) {
+        params.set("before", options.before);
+        params.set("beforeId", options.beforeId);
+    }
+    if (options?.limit) {
+        params.set("limit", String(options.limit));
+    }
+    return apiInstance.get(`/messages/search?${params.toString()}`, { signal });
 }
 
 

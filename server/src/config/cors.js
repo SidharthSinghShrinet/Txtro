@@ -8,6 +8,7 @@ const getClientOrigins = () => {
     "http://localhost:3000",
     "http://192.168.7.3:5173",
     "http://192.168.7.7:5173",
+    "http://192.168.7.6:5173",
     "https://admin.socket.io",
     ...envOrigins,
   ].filter(Boolean);

@@ -62,18 +62,51 @@ const ChatContainer = ({
   // Jump-to-message Highlight Pulse State (Phase 11 & Phase 16)
   const [highlightedMessageId, setHighlightedMessageId] = useState(null);
   const highlightTimerRef = useRef(null);
+  const jumpCleanupRef = useRef(null);
 
-  const handleJumpToMessage = useCallback((targetMessageId) => {
+  const handleJumpToMessage = useCallback((targetMessageId, { instant = false } = {}) => {
     if (!targetMessageId) return;
-    const el = document.getElementById(`msg-${targetMessageId}`);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setHighlightedMessageId(targetMessageId);
-      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
-      highlightTimerRef.current = setTimeout(() => {
-        setHighlightedMessageId(null);
-      }, 2000);
+    if (jumpCleanupRef.current) {
+      jumpCleanupRef.current();
+      jumpCleanupRef.current = null;
     }
+
+    const el = document.getElementById(`msg-${targetMessageId}`);
+    if (!el) return;
+
+    el.scrollIntoView({ behavior: instant ? 'auto' : 'smooth', block: 'center' });
+    setHighlightedMessageId(targetMessageId);
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    highlightTimerRef.current = setTimeout(() => {
+      setHighlightedMessageId(null);
+    }, 2000);
+
+    // Re-center target if images/link-previews above it finish loading and shift layout
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const reCenter = () => {
+      const targetEl = document.getElementById(`msg-${targetMessageId}`);
+      if (targetEl) {
+        targetEl.scrollIntoView({ behavior: 'auto', block: 'center' });
+      }
+    };
+
+    const cleanup = () => {
+      container.removeEventListener('load', reCenter, true);
+      container.removeEventListener('wheel', cleanup);
+      container.removeEventListener('touchstart', cleanup);
+      clearTimeout(unlockTimer);
+      if (jumpCleanupRef.current === cleanup) {
+        jumpCleanupRef.current = null;
+      }
+    };
+
+    container.addEventListener('load', reCenter, true);
+    container.addEventListener('wheel', cleanup, { passive: true });
+    container.addEventListener('touchstart', cleanup, { passive: true });
+    const unlockTimer = setTimeout(cleanup, 1500);
+    jumpCleanupRef.current = cleanup;
   }, []);
 
   const handleClearHighlight = useCallback(() => {
@@ -179,9 +212,9 @@ const ChatContainer = ({
     if (!exists) return;
 
     const timer = setTimeout(() => {
-      handleJumpToMessage(pendingJumpMessageId);
+      handleJumpToMessage(pendingJumpMessageId, { instant: true });
       onClearPendingJump();
-    }, 100);
+    }, 80);
     return () => clearTimeout(timer);
   }, [pendingJumpMessageId, messages, handleJumpToMessage, onClearPendingJump]);
 

@@ -33,9 +33,14 @@ function HomePage() {
     const [searchQuery, setSearchQuery] = useState('');
     const {
         globalSearchResults,
+        hasMoreMessages,
         isSearchingMessages,
+        isLoadingMoreMessages,
+        loadMoreMessages,
         triggerImmediateSearch,
-        invalidateSearchCache,
+        syncNewMessageInSearch,
+        syncDeletedMessageInSearch,
+        syncEditedMessageInSearch,
     } = useGlobalMessageSearch(searchQuery);
     const [messageInput, setMessageInput] = useState('');
     const [replyingToMessage, setReplyingToMessage] = useState(null);
@@ -415,6 +420,7 @@ function HomePage() {
                     setMessages((prev) =>
                         prev.map((m) => (m._id === msgId ? confirmed : m))
                     );
+                    syncEditedMessageInSearch(confirmed);
                 }
                 toast.success("Message edited");
             } catch (err) {
@@ -440,9 +446,6 @@ function HomePage() {
         setMessageInput("");
         setSelectedFiles([]);
         setReplyingToMessage(null);
-
-        // Invalidate Global Search cache since a new outgoing message is being sent
-        invalidateSearchCache();
 
         // Clear pending debounce timer + active draft from IndexedDB & memory
         if (draftDebounceRef.current) {
@@ -561,6 +564,9 @@ function HomePage() {
                 setUsers((prev) =>
                     prev.map((u) => (u._id === selectedUser._id ? { ...u, lastMessage: confirmedMsg } : u))
                 );
+
+                // Live-sync confirmed outgoing message into active global search results
+                syncNewMessageInSearch(confirmedMsg);
 
                 // Revoke temporary blob URLs to free browser RAM
                 optimisticAttachments.forEach((att) => {
@@ -785,7 +791,7 @@ function HomePage() {
     // Handle Delete Message (Phase 12: Dual Deletion Modes)
     const handleDeleteMessage = async (messageId, deleteType) => {
         if (!messageId || !selectedUser) return;
-        invalidateSearchCache();
+        syncDeletedMessageInSearch(messageId);
 
         const previousMessages = [...messages];
         const targetMsg = messages.find((m) => m._id === messageId);
@@ -852,7 +858,7 @@ function HomePage() {
         if (!socket) return;
 
         const handleNewMessage = (incomingMessage) => {
-            invalidateSearchCache();
+            syncNewMessageInSearch(incomingMessage);
             const isChatOpen = selectedUser && selectedUser._id === incomingMessage.senderId;
 
             if (isChatOpen) {
@@ -948,7 +954,7 @@ function HomePage() {
 
         // Real-time message deletion sync (Phase 12)
         const handleMessageDeleted = ({ messageId, deleteType }) => {
-            invalidateSearchCache();
+            syncDeletedMessageInSearch(messageId);
             if (deleteType === "everyone") {
                 setMessages((prevMessages) =>
                     prevMessages.map((msg) =>
@@ -979,7 +985,13 @@ function HomePage() {
 
         // Real-time message edit sync (Phase 13 & 14)
         const handleMessageEdited = ({ messageId, conversationId, message: newText, isEdited, editedAt, linkPreview }) => {
-            invalidateSearchCache();
+            syncEditedMessageInSearch({
+                _id: messageId,
+                message: newText,
+                isEdited,
+                editedAt,
+                ...(linkPreview !== undefined ? { linkPreview } : {}),
+            });
             setMessages((prevMessages) =>
                 prevMessages.map((msg) =>
                     msg._id === messageId
@@ -1154,7 +1166,10 @@ function HomePage() {
                         }}
                         onClearSearch={() => setSearchQuery('')}
                         globalSearchResults={globalSearchResults}
+                        hasMoreMessages={hasMoreMessages}
                         isSearchingMessages={isSearchingMessages}
+                        isLoadingMoreMessages={isLoadingMoreMessages}
+                        onLoadMoreMessages={loadMoreMessages}
                         onSelectMessageResult={handleSelectGlobalSearchResult}
                         onLogout={logout}
                         onOpenProfile={handleOpenProfileModal}

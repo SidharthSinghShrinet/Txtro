@@ -16,7 +16,10 @@ const Sidebar = ({
   onSearchKeyDown = () => { },
   onClearSearch = () => { },
   globalSearchResults = [],
+  hasMoreMessages = false,
   isSearchingMessages = false,
+  isLoadingMoreMessages = false,
+  onLoadMoreMessages = () => { },
   onSelectMessageResult = () => { },
   onLogout = () => { },
   onOpenProfile = () => { },
@@ -299,6 +302,9 @@ const Sidebar = ({
           searchQuery={searchQuery}
           results={globalSearchResults}
           isSearching={isSearchingMessages}
+          hasMore={hasMoreMessages}
+          isLoadingMore={isLoadingMoreMessages}
+          onLoadMore={onLoadMoreMessages}
           currentUserId={currentUser?._id}
           usersMap={usersMap}
           formatTime={formatLastMessageTime}
