@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, lazy, Suspense } from 'react';
-import { Check, CheckCheck, FileText, Download, Clock, AlertCircle, X, Smile, Plus, Loader2, Reply, Image as ImageIcon, Mic, Trash2, Ban, Pencil, ExternalLink } from 'lucide-react';
+import { Check, CheckCheck, FileText, Download, Clock, AlertCircle, X, Smile, Plus, Loader2, Reply, Image as ImageIcon, Mic, Trash2, Ban, Pencil, ExternalLink, Star } from 'lucide-react';
 import VoiceNotePlayer from './VoiceNotePlayer';
 import HighlightText from '../common/HighlightText';
 
@@ -21,12 +21,14 @@ const MessageBubble = ({
   replySnapshot = null,
   isDeletedForEveryone = false,
   isEdited = false,
+  isStarred = false,
   linkPreview = null,
   isHighlighted = false,
   searchQuery = '',
   isActiveSearchMatch = false,
   currentUserId = null,
   onToggleReaction = () => { },
+  onToggleStar = () => { },
   onSelectReply = () => { },
   onDeleteClick = () => { },
   onEditClick = () => { },
@@ -280,6 +282,19 @@ const MessageBubble = ({
             >
               <Smile size={15} />
             </button>
+            {status !== 'failed' && (
+              <button
+                type="button"
+                onClick={onToggleStar}
+                className={`p-1.5 rounded-full transition-all cursor-pointer shadow-xs active:scale-90 ${isStarred
+                  ? 'text-amber-500 hover:text-amber-600 bg-amber-50 dark:bg-amber-500/15'
+                  : 'text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10'
+                  }`}
+                title={isStarred ? 'Unstar message' : 'Star message'}
+              >
+                <Star size={15} className={isStarred ? 'fill-amber-400 text-amber-500' : ''} />
+              </button>
+            )}
             {canEdit && (
               <button
                 type="button"
@@ -362,6 +377,25 @@ const MessageBubble = ({
             >
               <Reply size={14} />
             </button>
+
+            {/* Mobile quick star button */}
+            {status !== 'sending' && status !== 'failed' && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowReactionDock(false);
+                  onToggleStar();
+                }}
+                className={`md:hidden w-7 h-7 flex items-center justify-center rounded-full transition-all cursor-pointer hover:scale-115 active:scale-95 shrink-0 ${isStarred
+                  ? 'text-amber-500 bg-amber-50 dark:bg-amber-500/15'
+                  : 'text-slate-500 hover:text-amber-500 dark:text-slate-400 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10'
+                  }`}
+                title={isStarred ? 'Unstar message' : 'Star message'}
+              >
+                <Star size={14} className={isStarred ? 'fill-amber-400 text-amber-500' : ''} />
+              </button>
+            )}
 
             {/* Mobile quick edit button */}
             {canEdit && (
@@ -753,6 +787,13 @@ const MessageBubble = ({
               : 'mt-1'
               } ${isOutgoing ? 'text-indigo-200/80' : 'text-slate-400 dark:text-slate-400'}`}
           >
+            {isStarred && (
+              <Star
+                size={10}
+                className={`shrink-0 ${isOutgoing ? 'fill-amber-300 text-amber-300' : 'fill-amber-400 text-amber-500'}`}
+                title="Starred message"
+              />
+            )}
             {isEdited && (
               <span className="italic opacity-75 text-[9.5px] font-normal mr-0.5 select-none">
                 edited

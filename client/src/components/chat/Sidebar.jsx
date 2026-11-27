@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
-import { Search, LogOut, MessageSquare, Users, Sun, Moon, Image as ImageIcon, FileText, Mic, FolderOpen, Ban, Pencil, X } from 'lucide-react';
+import { Search, LogOut, MessageSquare, Users, Sun, Moon, Image as ImageIcon, FileText, Mic, FolderOpen, Ban, Pencil, X, Star } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import UserAvatar from '../common/UserAvatar';
 import GlobalSearchResults from './GlobalSearchResults';
+import StarredMessagesVault from './StarredMessagesVault';
 
 const Sidebar = ({
   currentUser = null,
@@ -25,6 +26,17 @@ const Sidebar = ({
   onOpenProfile = () => { },
   onViewAvatar = () => { },
   draftsMap = {},
+  isVaultOpen = false,
+  onToggleVault = () => { },
+  vaultCategory = 'all',
+  onVaultCategoryChange = () => { },
+  starredMessages = [],
+  hasMoreStarred = false,
+  isLoadingStarred = false,
+  isLoadingMoreStarred = false,
+  onLoadMoreStarred = () => { },
+  onSelectStarredMessage = () => { },
+  onUnstarMessage = () => { },
 }) => {
   const { theme, toggleTheme } = useTheme();
 
@@ -98,8 +110,20 @@ const Sidebar = ({
           </div>
         </button>
 
-        {/* Action Buttons: Theme Toggle & Logout */}
+        {/* Action Buttons: Starred Vault, Theme Toggle & Logout */}
         <div className="flex items-center gap-1">
+          <button
+            onClick={onToggleVault}
+            type="button"
+            title={isVaultOpen ? 'Close Starred Vault' : 'Starred Messages Vault'}
+            className={`p-2 rounded-xl transition-all cursor-pointer ${isVaultOpen
+              ? 'text-amber-500 bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30'
+              : 'text-slate-500 hover:text-amber-500 dark:text-slate-400 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 border border-transparent'
+              }`}
+          >
+            <Star size={18} className={isVaultOpen ? 'fill-amber-400 text-amber-500' : ''} />
+          </button>
+
           <button
             onClick={toggleTheme}
             type="button"
@@ -120,7 +144,25 @@ const Sidebar = ({
         </div>
       </div>
 
-      {/* Search Bar */}
+      {isVaultOpen ? (
+        <StarredMessagesVault
+          activeCategory={vaultCategory}
+          onCategoryChange={onVaultCategoryChange}
+          starredMessages={starredMessages}
+          hasMore={hasMoreStarred}
+          isLoading={isLoadingStarred}
+          isLoadingMore={isLoadingMoreStarred}
+          onLoadMore={onLoadMoreStarred}
+          currentUserId={currentUser?._id}
+          usersMap={usersMap}
+          formatTime={formatLastMessageTime}
+          onSelectStarredMessage={onSelectStarredMessage}
+          onUnstarMessage={onUnstarMessage}
+          onClose={onToggleVault}
+        />
+      ) : (
+        <>
+          {/* Search Bar */}
       <div className="p-3 border-b border-slate-200/80 dark:border-slate-800/50">
         <div className="relative flex items-center">
           <Search size={16} className="absolute left-3.5 text-slate-400 pointer-events-none" />
@@ -311,6 +353,8 @@ const Sidebar = ({
           onSelectResult={onSelectMessageResult}
         />
       </div>
+        </>
+      )}
     </aside>
   );
 };

@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { mongo } from "mongoose";
 
 const messageSchema = new mongoose.Schema({
     conversationId: {
@@ -116,6 +116,12 @@ const messageSchema = new mongoose.Schema({
             ref: "User"
         }
     ],
+    starredBy: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User"
+        }
+    ],
     isDeletedForEveryone: {
         type: Boolean,
         default: false
@@ -156,5 +162,6 @@ const messageSchema = new mongoose.Schema({
 });
 
 messageSchema.index({ conversationId: 1, createdAt: -1 })
+messageSchema.index({ starredBy: 1, createdAt: -1 })
 
 export default mongoose.model("Message", messageSchema);

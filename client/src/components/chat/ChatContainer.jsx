@@ -3,6 +3,7 @@ import ChatHeader from './ChatHeader';
 import InChatSearchBar from './InChatSearchBar';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
+import MessageSkeleton from './MessageSkeleton';
 import DateSeparator from './DateSeparator';
 import { isSameDay } from '../../utils/date';
 import { useInChatSearch } from '../../hooks/useInChatSearch';
@@ -22,11 +23,13 @@ const ChatContainer = ({
   isOnline = false,
   isTyping = false,
   messages = [],
+  isLoadingMessages = false,
   messageText = '',
   onMessageChange = () => { },
   onSendMessage = () => { },
   onSendAudio = () => { },
   onToggleReaction = () => { },
+  onToggleStar = () => { },
   onBack = () => { },
   isSending = false,
   selectedFiles = [],
@@ -59,18 +62,46 @@ const ChatContainer = ({
   const isNearBottomRef = useRef(true);
   const prevMessagesLengthRef = useRef(messages.length);
 
-  // Jump-to-message Highlight Pulse State (Phase 11 & Phase 16)
+  // Jump-to-message Highlight Pulse State & Shared CLS Scroll Anchor (Phase 11, 16)
   const [highlightedMessageId, setHighlightedMessageId] = useState(null);
   const highlightTimerRef = useRef(null);
-  const jumpCleanupRef = useRef(null);
+  const scrollAnchorCleanupRef = useRef(null);
+
+  const attachScrollAnchor = useCallback((onRelayout) => {
+    if (scrollAnchorCleanupRef.current) {
+      scrollAnchorCleanupRef.current();
+      scrollAnchorCleanupRef.current = null;
+    }
+
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const cleanup = () => {
+      container.removeEventListener('load', onRelayout, true);
+      container.removeEventListener('wheel', cleanup);
+      container.removeEventListener('touchstart', cleanup);
+      clearTimeout(unlockTimer);
+      if (scrollAnchorCleanupRef.current === cleanup) {
+        scrollAnchorCleanupRef.current = null;
+      }
+    };
+
+    container.addEventListener('load', onRelayout, true);
+    container.addEventListener('wheel', cleanup, { passive: true });
+    container.addEventListener('touchstart', cleanup, { passive: true });
+    const unlockTimer = setTimeout(cleanup, 1500);
+    scrollAnchorCleanupRef.current = cleanup;
+  }, []);
+
+  const anchorScrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+    attachScrollAnchor(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+    });
+  }, [attachScrollAnchor]);
 
   const handleJumpToMessage = useCallback((targetMessageId, { instant = false } = {}) => {
     if (!targetMessageId) return;
-    if (jumpCleanupRef.current) {
-      jumpCleanupRef.current();
-      jumpCleanupRef.current = null;
-    }
-
     const el = document.getElementById(`msg-${targetMessageId}`);
     if (!el) return;
 
@@ -81,33 +112,13 @@ const ChatContainer = ({
       setHighlightedMessageId(null);
     }, 2000);
 
-    // Re-center target if images/link-previews above it finish loading and shift layout
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const reCenter = () => {
+    attachScrollAnchor(() => {
       const targetEl = document.getElementById(`msg-${targetMessageId}`);
       if (targetEl) {
         targetEl.scrollIntoView({ behavior: 'auto', block: 'center' });
       }
-    };
-
-    const cleanup = () => {
-      container.removeEventListener('load', reCenter, true);
-      container.removeEventListener('wheel', cleanup);
-      container.removeEventListener('touchstart', cleanup);
-      clearTimeout(unlockTimer);
-      if (jumpCleanupRef.current === cleanup) {
-        jumpCleanupRef.current = null;
-      }
-    };
-
-    container.addEventListener('load', reCenter, true);
-    container.addEventListener('wheel', cleanup, { passive: true });
-    container.addEventListener('touchstart', cleanup, { passive: true });
-    const unlockTimer = setTimeout(cleanup, 1500);
-    jumpCleanupRef.current = cleanup;
-  }, []);
+    });
+  }, [attachScrollAnchor]);
 
   const handleClearHighlight = useCallback(() => {
     if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
@@ -200,10 +211,10 @@ const ChatContainer = ({
     prevMessagesLengthRef.current = 0;
     if (pendingJumpRef.current) return;
     const timer = setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      anchorScrollToBottom();
     }, 40);
     return () => clearTimeout(timer);
-  }, [selectedUser?._id]);
+  }, [selectedUser?._id, anchorScrollToBottom]);
 
   // Jump directly to a message selected from Global Sidebar Search once messages load
   useEffect(() => {
@@ -232,7 +243,9 @@ const ChatContainer = ({
       const isOutgoing = lastMsg.senderId === currentUser?._id;
 
       // Always scroll down if the user sent it, or if they were already at the bottom
-      if (isOutgoing || isNearBottomRef.current) {
+      if (prevLength === 0) {
+        anchorScrollToBottom();
+      } else if (isOutgoing || isNearBottomRef.current) {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       } else {
         // User was reading old messages: do not disrupt their scroll position! Increment badge count
@@ -240,9 +253,9 @@ const ChatContainer = ({
       }
     } else if (messages.length > 0 && prevLength === 0) {
       // First load of messages for this conversation
-      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      anchorScrollToBottom();
     }
-  }, [messages, currentUser?._id, pendingJumpMessageId]);
+  }, [messages, currentUser?._id, pendingJumpMessageId, anchorScrollToBottom]);
 
   useEffect(() => {
     if (isTyping && isNearBottomRef.current) {
@@ -347,7 +360,9 @@ const ChatContainer = ({
           onScroll={handleScroll}
           className="flex-1 min-w-0 w-full max-w-full overflow-y-auto overflow-x-hidden p-3 sm:p-6 space-y-2"
         >
-          {messages.length === 0 ? (
+          {isLoadingMessages ? (
+            <MessageSkeleton />
+          ) : messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500">
               <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center mb-3 shadow-xs">
                 <MessageSquareDashed size={24} className="text-indigo-500 dark:text-indigo-400" />
@@ -360,6 +375,11 @@ const ChatContainer = ({
           ) : (
             messages.map((msg, index) => {
               const isOutgoing = msg.senderId === currentUser?._id;
+              const isStarred = Boolean(
+                Array.isArray(msg.starredBy) &&
+                currentUser?._id &&
+                msg.starredBy.some((id) => (id?._id || id)?.toString() === currentUser._id.toString())
+              );
               const prevMsg = index > 0 ? messages[index - 1] : null;
               const showDateSeparator = !prevMsg || !isSameDay(prevMsg.createdAt, msg.createdAt);
 
@@ -379,12 +399,14 @@ const ChatContainer = ({
                     replySnapshot={msg.replySnapshot}
                     isDeletedForEveryone={msg.isDeletedForEveryone || false}
                     isEdited={msg.isEdited || false}
+                    isStarred={isStarred}
                     linkPreview={msg.linkPreview || null}
                     isHighlighted={highlightedMessageId === msg._id}
                     searchQuery={inChatSearchQuery}
                     isActiveSearchMatch={activeMessageId === msg._id}
                     currentUserId={currentUser?._id}
                     onToggleReaction={onToggleReaction}
+                    onToggleStar={() => onToggleStar(msg._id)}
                     onSelectReply={() => onSelectReply(msg)}
                     onDeleteClick={() => setConfirmDeleteMessage(msg)}
                     onEditClick={() => onStartEdit(msg)}

@@ -8,8 +8,9 @@ import AvatarLightbox from '../components/common/AvatarLightbox';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { useGlobalMessageSearch } from '../hooks/useGlobalMessageSearch';
+import { useStarredMessages } from '../hooks/useStarredMessages';
 import toast from 'react-hot-toast';
-import { getAllUsersWithMetadataApi, getMessagesApi, sendMessageApi, toggleReactionApi, deleteForMeApi, deleteForEveryoneApi, editMessageApi, updateProfileApi, abortAvatarUploadApi, getProfileOptionsApi } from '../api/api';
+import { getAllUsersWithMetadataApi, getMessagesApi, sendMessageApi, toggleReactionApi, toggleStarMessageApi, deleteForMeApi, deleteForEveryoneApi, editMessageApi, updateProfileApi, abortAvatarUploadApi, getProfileOptionsApi } from '../api/api';
 import { useEffect } from 'react';
 import { uploadFilesDirectlyToCloud, uploadAvatarDirectlyToCloud } from '../utils/fileUpload';
 import {
@@ -42,6 +43,20 @@ function HomePage() {
         syncDeletedMessageInSearch,
         syncEditedMessageInSearch,
     } = useGlobalMessageSearch(searchQuery);
+    const {
+        isVaultOpen,
+        setIsVaultOpen,
+        activeCategory: vaultCategory,
+        setActiveCategory: setVaultCategory,
+        starredMessages,
+        hasMoreStarred,
+        isLoadingStarred,
+        isLoadingMoreStarred,
+        loadMoreStarred,
+        syncStarredUpdate,
+        syncDeletedStarredMessage,
+        syncEditedStarredMessage,
+    } = useStarredMessages();
     const [messageInput, setMessageInput] = useState('');
     const [replyingToMessage, setReplyingToMessage] = useState(null);
     const [editingMessage, setEditingMessage] = useState(null);
@@ -100,15 +115,23 @@ function HomePage() {
 
     // All Messages between LoggedInUser and Selected User
     const [messages, setMessages] = useState([]);
+    const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 
     // Sample messages (Replace with your actual messages from GET /api/v1/messages/:id)
     const selectedUserId = selectedUser?._id;
     useEffect(() => {
+        let isCancelled = false;
+
         async function getMessages() {
-            if (!selectedUserId) return;
+            if (!selectedUserId) {
+                setIsLoadingMessages(false);
+                return;
+            }
+            setIsLoadingMessages(true);
             setMessages([]);
             try {
                 const response = await getMessagesApi(selectedUserId);
+                if (isCancelled) return;
                 if (response?.status === 200) {
                     const fetchedMessages = response?.data?.data || [];
                     setMessages(fetchedMessages);
@@ -131,10 +154,20 @@ function HomePage() {
                     );
                 }
             } catch (error) {
-                toast.error(error?.response?.data?.message || error?.message)
+                if (!isCancelled) {
+                    toast.error(error?.response?.data?.message || error?.message);
+                }
+            } finally {
+                if (!isCancelled) {
+                    setIsLoadingMessages(false);
+                }
             }
         }
         getMessages();
+
+        return () => {
+            isCancelled = true;
+        };
     }, [selectedUserId]);
 
 
@@ -788,10 +821,70 @@ function HomePage() {
         }
     };
 
+    // Handle Star / Bookmark Message (Feature 17 - Private per user with optimistic UI)
+    const handleToggleStar = async (messageId) => {
+        if (!messageId || !user?._id) return;
+
+        const targetMsg =
+            messages.find((m) => m._id === messageId) ||
+            starredMessages.find((m) => m._id === messageId);
+        const currentlyStarred = Boolean(
+            targetMsg?.starredBy?.some((id) => (id?._id || id)?.toString() === user._id.toString())
+        );
+        const nextStarred = !currentlyStarred;
+        const previousMessages = [...messages];
+
+        // 1. Optimistic update on active chat messages & Vault
+        setMessages((prev) =>
+            prev.map((msg) => {
+                if (msg._id !== messageId) return msg;
+                const prevStars = Array.isArray(msg.starredBy) ? msg.starredBy : [];
+                const updatedStars = nextStarred
+                    ? [...prevStars.filter((id) => (id?._id || id)?.toString() !== user._id.toString()), user._id]
+                    : prevStars.filter((id) => (id?._id || id)?.toString() !== user._id.toString());
+                return { ...msg, starredBy: updatedStars };
+            })
+        );
+
+        syncStarredUpdate({
+            messageId,
+            isStarred: nextStarred,
+            message: targetMsg
+                ? { ...targetMsg, starredBy: nextStarred ? [user._id] : [] }
+                : null,
+        });
+
+        // 2. Persist to backend
+        try {
+            const res = await toggleStarMessageApi(messageId);
+            const serverData = res?.data?.data;
+            if (serverData) {
+                setMessages((prev) =>
+                    prev.map((m) =>
+                        m._id === messageId
+                            ? { ...m, starredBy: serverData.isStarred ? [user._id] : [] }
+                            : m
+                    )
+                );
+                toast.success(serverData.isStarred ? "Message starred" : "Removed from starred");
+            }
+        } catch (err) {
+            console.error("Failed to toggle star:", err);
+            setMessages(previousMessages);
+            syncStarredUpdate({
+                messageId,
+                isStarred: currentlyStarred,
+                message: targetMsg || null,
+            });
+            toast.error(err?.response?.data?.message || "Could not update star");
+        }
+    };
+
     // Handle Delete Message (Phase 12: Dual Deletion Modes)
     const handleDeleteMessage = async (messageId, deleteType) => {
         if (!messageId || !selectedUser) return;
         syncDeletedMessageInSearch(messageId);
+        syncDeletedStarredMessage(messageId);
 
         const previousMessages = [...messages];
         const targetMsg = messages.find((m) => m._id === messageId);
@@ -955,6 +1048,7 @@ function HomePage() {
         // Real-time message deletion sync (Phase 12)
         const handleMessageDeleted = ({ messageId, deleteType }) => {
             syncDeletedMessageInSearch(messageId);
+            syncDeletedStarredMessage(messageId);
             if (deleteType === "everyone") {
                 setMessages((prevMessages) =>
                     prevMessages.map((msg) =>
@@ -985,6 +1079,7 @@ function HomePage() {
 
         // Real-time message edit sync (Phase 13 & 14)
         const handleMessageEdited = ({ messageId, conversationId, message: newText, isEdited, editedAt, linkPreview }) => {
+            syncEditedStarredMessage(messageId, newText, isEdited);
             syncEditedMessageInSearch({
                 _id: messageId,
                 message: newText,
@@ -1036,6 +1131,27 @@ function HomePage() {
             );
         };
 
+        // Feature 17: Private multi-device star sync (Phone <-> Laptop)
+        const handleMessageStarredUpdated = ({ messageId, isStarred }) => {
+            if (!messageId || !user?._id) return;
+            let matchedMsg = null;
+
+            setMessages((prevMessages) =>
+                prevMessages.map((msg) => {
+                    if (msg._id !== messageId) return msg;
+                    const updated = { ...msg, starredBy: isStarred ? [user._id] : [] };
+                    matchedMsg = updated;
+                    return updated;
+                })
+            );
+
+            syncStarredUpdate({
+                messageId,
+                isStarred,
+                message: matchedMsg,
+            });
+        };
+
         socket.on("newMessage", handleNewMessage);
         socket.on("userTyping", handleUserTyping);
         socket.on("userStoppedTyping", handleUserStoppedTyping);
@@ -1046,6 +1162,7 @@ function HomePage() {
         socket.on("messageDeleted", handleMessageDeleted);
         socket.on("messageEdited", handleMessageEdited);
         socket.on("user:profile_updated", handleUserProfileUpdated);
+        socket.on("messageStarredUpdated", handleMessageStarredUpdated);
 
         return () => {
             socket.off("newMessage", handleNewMessage);
@@ -1058,8 +1175,9 @@ function HomePage() {
             socket.off("messageDeleted", handleMessageDeleted);
             socket.off("messageEdited", handleMessageEdited);
             socket.off("user:profile_updated", handleUserProfileUpdated);
+            socket.off("messageStarredUpdated", handleMessageStarredUpdated);
         };
-    }, [socket, selectedUser, user?._id]);
+    }, [socket, selectedUser, user?._id, syncStarredUpdate]);
 
     // Lock window scrolling on mobile devices so virtual keyboard cannot shift the header off-screen
     useEffect(() => {
@@ -1136,6 +1254,12 @@ function HomePage() {
         setPendingJumpMessageId(msg._id);
     };
 
+    const handleSelectStarredMessage = (msg, contact) => {
+        if (!contact || !msg?._id) return;
+        handleSelectUser(contact);
+        setPendingJumpMessageId(msg._id);
+    };
+
     const filteredUsers = users.filter((u) => u?.fullname?.toLowerCase().includes(searchQuery.toLowerCase()) || u?.username?.toLowerCase().includes(searchQuery.toLowerCase()))
 
     return (
@@ -1175,6 +1299,17 @@ function HomePage() {
                         onOpenProfile={handleOpenProfileModal}
                         onViewAvatar={setLightboxAvatarUser}
                         draftsMap={draftsMap}
+                        isVaultOpen={isVaultOpen}
+                        onToggleVault={() => setIsVaultOpen((prev) => !prev)}
+                        vaultCategory={vaultCategory}
+                        onVaultCategoryChange={setVaultCategory}
+                        starredMessages={starredMessages}
+                        hasMoreStarred={hasMoreStarred}
+                        isLoadingStarred={isLoadingStarred}
+                        isLoadingMoreStarred={isLoadingMoreStarred}
+                        onLoadMoreStarred={loadMoreStarred}
+                        onSelectStarredMessage={handleSelectStarredMessage}
+                        onUnstarMessage={handleToggleStar}
                     />
                 </div>
 
@@ -1188,11 +1323,13 @@ function HomePage() {
                             isOnline={onlineUsers?.includes(selectedUser?._id)}
                             isTyping={isTyping}
                             messages={messages}
+                            isLoadingMessages={isLoadingMessages}
                             messageText={messageInput}
                             onMessageChange={handleMessageInputChange}
                             onSendMessage={handleSendMessage}
                             onSendAudio={handleSendAudio}
                             onToggleReaction={handleToggleReaction}
+                            onToggleStar={handleToggleStar}
                             onDeleteMessage={handleDeleteMessage}
                             onBack={handleBackToSidebar}
                             selectedFiles={selectedFiles}

@@ -1,5 +1,5 @@
 import Router from "express";
-import { abortUpload, getMessage, getUploadUrl, sendMessage, toggleReaction, deleteForMe, deleteForEveryone, editMessage, getLinkPreview, getSearchMessages } from "../controllers/message.controller.js";
+import { abortUpload, getMessage, getUploadUrl, sendMessage, toggleReaction, deleteForMe, deleteForEveryone, editMessage, getLinkPreview, getSearchMessages, toggleStarMessage, getStarredMessages } from "../controllers/message.controller.js";
 import authenticate from "../middlewares/auth.middleware.js";
 const router = Router();
 
@@ -50,6 +50,16 @@ router.get("/link-preview", authenticate, getLinkPreview);
 //& @route   GET /api/v1/messages/search?q=keyword
 //& @access  Private
 router.get("/search", authenticate, getSearchMessages)
+
+//& @desc    Toggle star/bookmark on a message (private per user)
+//& @route   POST /api/v1/messages/star/:messageId
+//& @access  Private
+router.post("/star/:messageId", authenticate, toggleStarMessage);
+
+//& @desc    Get all starred messages for logged-in user (filterable + cursor paginated)
+//& @route   GET /api/v1/messages/starred?category=all&before=ISO&beforeId=ObjectId&limit=20
+//& @access  Private
+router.get("/starred", authenticate, getStarredMessages);
 
 //& @desc    Getting messages between two users
 //& @route   GET /api/v1/messages/:id

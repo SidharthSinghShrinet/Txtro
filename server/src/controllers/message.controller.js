@@ -7,7 +7,7 @@ import { getReceiverSocketIds, io } from "../socket/socket.js";
 import { deleteObjectsFromOCI, generatePreSignedUploadUrl } from "../utils/ociStorage.util.js";
 import uploadIntentModel from "../models/uploadIntent.model.js";
 import { extractLinkPreview } from "../utils/linkPreview.js";
-import mongoose from "mongoose";
+import mongoose, { mongo } from "mongoose";
 
 
 const getUploadUrl = expressAsyncHandler(async (req, res) => {
@@ -197,7 +197,23 @@ const getMessage = expressAsyncHandler(async (req, res, next) => {
     if (!conversation) {
         return new ApiResponse(200, true, "No conversation found", []).send(res);
     }
-    const messages = await messageModel.find({ conversationId: conversation._id, deletedFor: { $ne: senderId } }).sort({ createdAt: 1 });
+
+    //! Old-Way
+    // const messages = await messageModel.find({ conversationId: conversation._id, deletedFor: { $ne: senderId } }).sort({ createdAt: 1 });
+
+    //! New-Way (Due to Privacy + Security Upgradation)
+    const rawMessages = await messageModel
+        .find({ conversationId: conversation._id, deletedFor: { $ne: senderId } })
+        .sort({ createdAt: 1 })
+        .lean();
+
+    const myId = senderId.toString();
+    const messages = rawMessages.map((msg) => ({
+        ...msg,
+        starredBy: Array.isArray(msg.starredBy) && msg.starredBy.some((id) => id.toString() === myId)
+            ? [senderId]
+            : []
+    }));
 
     // 1. Mark unread messages sent to me as 'read'
     await messageModel.updateMany({ conversationId: conversation._id, receiverId: senderId, status: { $ne: "read" } }, { status: "read" });
@@ -579,4 +595,143 @@ const getSearchMessages = expressAsyncHandler(async (req, res) => {
     }).send(res);
 });
 
-export { sendMessage, getMessage, getUploadUrl, abortUpload, toggleReaction, deleteForMe, deleteForEveryone, editMessage, getLinkPreview, getSearchMessages };
+//& @desc    Toggle star/bookmark on a message
+//& @route   POST /api/v1/messages/star/:messageId
+//& @access  Private
+const toggleStarMessage = expressAsyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    const { messageId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(messageId)) {
+        throw new ErrorHandler(400, "Invalid message ID");
+    }
+    // Ensure user is a participant and message is not deleted
+    const existingMsg = await messageModel.findOne({
+        _id: messageId,
+        $or: [{ senderId: userId }, { receiverId: userId }],
+        isDeletedForEveryone: { $ne: true },
+        deletedFor: { $ne: userId }
+    });
+
+    if (!existingMsg) {
+        throw new ErrorHandler(404, "Message not found");
+    }
+
+    const isCurrentStarred = existingMsg.starredBy?.some(
+        (id) => id.toString() === userId.toString()
+    );
+
+    // Atomic toggle using $pull / $addToSet (concurrency-safe across Phone + Laptop)
+    const updateOp = isCurrentStarred
+        ? { $pull: { starredBy: userId } }
+        : { $addToSet: { starredBy: userId } };
+
+    const updateMsg = await messageModel.findByIdAndUpdate(
+        messageId,
+        updateOp,
+        { new: true, select: "_id conversationId starredBy" }
+    );
+
+    const isStarredNow = !isCurrentStarred;
+
+    // Private Multi-Device Sync: emit ONLY to this user's own sockets (not the other contact!)
+    const mySocketIds = getReceiverSocketIds(userId);
+    mySocketIds.forEach((sId) => {
+        io.to(sId).emit("messageStarredUpdated", {
+            messageId: updateMsg._id,
+            conversationId: updateMsg.conversationId,
+            isStarred: isStarredNow,
+            starredBy: updateMsg.starredBy,
+        });
+    });
+
+    new ApiResponse(200, true, isStarredNow ? "Message starred" : "Message unstarred", {
+        messageId: updateMsg._id,
+        isStarred: isStarredNow,
+        starredBy: updateMsg.starredBy
+    }).send(res);
+});
+
+//& @desc    Get starred messages for the logged-in user
+//& @route   GET /api/v1/messages/starred?category=all&before=ISO&beforeId=ObjectId&limit=20
+//& @access  Private
+const getStarredMessages = expressAsyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    const { category = "all", before, beforeId } = req.query;
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 20));
+
+    const queryFilter = {
+        starredBy: userId,
+        isDeletedForEveryone: { $ne: true },
+        deletedFor: { $ne: userId },
+        $and: [],
+    }
+
+    // Category filters for Vault tabs: all | text | media | docs | links
+    if (category === "text") {
+        queryFilter.$and.push({
+            messageType: "text",
+            "linkPreview.url": null,
+            message: { $not: /https?:\/\//i },
+        });
+    } else if (category === "media") {
+        queryFilter.$and.push({
+            messageType: { $in: ["image", "audio", "mixed"] }
+        });
+    } else if (category === "docs") {
+        queryFilter.$and.push({
+            messageType: { $in: ["document", "mixed"] }
+        })
+    } else if (category === "links") {
+        queryFilter.$and.push({
+            $or: [
+                { "linkPreview.url": { $ne: null } },
+                { message: /https?:\/\//i },
+            ]
+        })
+    }
+
+    // Apply 2-field cursor (createdAt, _id) for "Load older starred"
+    if (before && beforeId && mongoose.Types.ObjectId.isValid(beforeId)) {
+        const cursorDate = new Date(before);
+        if (!Number.isNaN(cursorDate.getTime())) {
+            queryFilter.$and.push({
+                $or: [
+                    { createdAt: { $lt: cursorDate } },
+                    {
+                        createdAt: cursorDate,
+                        _id: { $lt: new mongoose.Types.ObjectId(beforeId) },
+                    }
+                ]
+            })
+        }
+    }
+
+    // Remove empty $and if no extra filter was added
+    if (queryFilter.$and.length === 0) {
+        delete queryFilter.$and;
+    }
+
+    const starredMessages = await messageModel
+        .find(queryFilter)
+        .sort({ createdAt: -1, _id: -1 })
+        .limit(limit + 1)
+        .select("_id conversationId senderId receiverId message messageType attachments linkPreview starredBy isEdited createdAt")
+        .lean();
+
+
+    const hasMore = starredMessages.length > limit;
+    const results = hasMore ? starredMessages.slice(0, limit) : starredMessages;
+    const lastItem = results[results.length - 1];
+
+    const nextCursor = hasMore && lastItem
+        ? { before: lastItem.createdAt, beforeId: lastItem._id }
+        : null;
+
+    new ApiResponse(200, true, "Starred messages fetched successfully", {
+        results,
+        hasMore,
+        nextCursor,
+    }).send(res);
+});
+
+export { sendMessage, getMessage, getUploadUrl, abortUpload, toggleReaction, deleteForMe, deleteForEveryone, editMessage, getLinkPreview, getSearchMessages, toggleStarMessage, getStarredMessages };

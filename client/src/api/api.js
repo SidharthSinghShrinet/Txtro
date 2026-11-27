@@ -83,4 +83,20 @@ export const searchMessagesApi = (query, options = {}, signal) => {
     return apiInstance.get(`/messages/search?${params.toString()}`, { signal });
 }
 
+export const toggleStarMessageApi = (messageId) => {
+    return apiInstance.post(`/messages/star/${messageId}`);
+}
+
+export const getStarredMessagesApi = (category = "all", options = {}, signal) => {
+    const params = new URLSearchParams({ category });
+    if (options?.before && options?.beforeId) {
+        params.set("before", options.before);
+        params.set("beforeId", options.beforeId);
+    }
+    if (options?.limit) {
+        params.set("limit", String(options.limit));
+    }
+    return apiInstance.get(`/messages/starred?${params.toString()}`, { signal });
+}
+
 
